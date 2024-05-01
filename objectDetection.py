@@ -198,7 +198,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--correct_distorsion",
         help="Apply a correction to the distortion camera",
-        default=False,
+        default=True,
         action="store_true",
     )
 
@@ -257,37 +257,36 @@ def main():
     # 8. Create and attach the visualizer and start listening to streaming data
     class StreamingClientObserver:
         def __init__(self):
-            self.rgb_image = None
+            self.img = None
 
         def on_image_received(self, image: np.array, record: ImageDataRecord):
-            self.rgb_image = image
+            self.img = image
 
     observer = StreamingClientObserver()
     streaming_client.set_streaming_client_observer(observer)
     streaming_client.subscribe()
 
     # 9. Render the streaming data until we close the window
-    rgb_window = "Aria RGB"
-    undistorted_window = "Undistorted RGB"
+    window = "Aria Vision"
 
-    cv2.namedWindow(rgb_window, cv2.WINDOW_NORMAL)
-    cv2.resizeWindow(rgb_window, 512, 512)
-    cv2.setWindowProperty(rgb_window, cv2.WND_PROP_TOPMOST, 1)
-    cv2.moveWindow(rgb_window, 50, 50)
+    cv2.namedWindow(window, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(window, 512, 512)
+    cv2.setWindowProperty(window, cv2.WND_PROP_TOPMOST, 1)
+    cv2.moveWindow(window, 50, 50)
 
-    if args.correct_distorsion:
-        cv2.namedWindow(undistorted_window, cv2.WINDOW_NORMAL)
-        cv2.resizeWindow(undistorted_window, 512, 512)
-        cv2.setWindowProperty(undistorted_window, cv2.WND_PROP_TOPMOST, 1)
-        cv2.moveWindow(undistorted_window, 600, 50)
 
     with ctrl_c_handler() as ctrl_c:
         while not (quit_keypress() or ctrl_c):
-            if observer.rgb_image is not None:
-                rgb_image = cv2.cvtColor(observer.rgb_image, cv2.COLOR_BGR2RGB)
+            if observer.img is not None:
+                img = cv2.cvtColor(observer.img, cv2.COLOR_BGR2RGB)
                 
-
-                results = model(rgb_image, stream=True)
+                if args.correct_distorsion:
+                    # Apply the undistortion correction
+                    img = distort_by_calibration(
+                        img, dst_calib, rgb_calib
+                    )
+                
+                results = model(img, stream=True, verbose=False)
 
                 # coordinates
                 for r in results:
@@ -304,15 +303,15 @@ def main():
                         )  # convert to int values
 
                         # put box in cam
-                        cv2.rectangle(rgb_image, (x1, y1), (x2, y2), (255, 0, 255), 3)
+                        cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 255), 3)
 
                         # confidence
                         confidence = math.ceil((box.conf[0] * 100)) / 100
-                        print("Confidence --->", confidence)
+                        #print("Confidence --->", confidence)
 
                         # class name
                         cls = int(box.cls[0])
-                        print("Class name -->", classNames[cls])
+                        #print("Class name -->", classNames[cls])
 
                         # object details
                         org = [x1, y1]
@@ -322,19 +321,13 @@ def main():
                         thickness = 2
 
                         cv2.putText(
-                            rgb_image, classNames[cls], org, font, fontScale, color, thickness
+                            img, classNames[cls], org, font, fontScale, color, thickness
                         )
-                cv2.imshow(rgb_window, np.rot90(rgb_image, -1))
+                cv2.imshow(window, np.rot90(img, -1))
 
-                if args.correct_distorsion:
-                    # Apply the undistortion correction
-                    undistorted_rgb_image = distort_by_calibration(
-                        rgb_image, dst_calib, rgb_calib
-                    )
-                    # Show the undistorted image
-                    cv2.imshow(undistorted_window, np.rot90(undistorted_rgb_image, -1))
+                
 
-                observer.rgb_image = None
+                observer.img = None
 
     # 10. Unsubscribe from data and stop streaming
     print("Stop listening to image data")
