@@ -8,7 +8,6 @@ import aria.sdk as aria
 import cv2
 import numpy as np
 
-from common import ctrl_c_handler, quit_keypress, update_iptables
 
 from projectaria_tools.core.calibration import (
     device_calibration_from_json_string,
@@ -104,8 +103,15 @@ def parse_args() -> argparse.Namespace:
         help="Profile to be used for streaming.",
     )
     parser.add_argument(
-        "--device-ip", help="IP address to connect to the device over wifi"
+        "--device_ip", help="IP address to connect to the device over wifi"
     )
+    parser.add_argument(
+        "--correct_distorsion", help="Apply a correction to the distortion camera",
+        default=False,
+        action="store_true"
+    )
+    
+    
     
     return parser.parse_args()
 
@@ -177,11 +183,12 @@ def main():
     cv2.resizeWindow(rgb_window, 512, 512)
     cv2.setWindowProperty(rgb_window, cv2.WND_PROP_TOPMOST, 1)
     cv2.moveWindow(rgb_window, 50, 50)
-
-    cv2.namedWindow(undistorted_window, cv2.WINDOW_NORMAL)
-    cv2.resizeWindow(undistorted_window, 512, 512)
-    cv2.setWindowProperty(undistorted_window, cv2.WND_PROP_TOPMOST, 1)
-    cv2.moveWindow(undistorted_window, 600, 50)
+    
+    if(args.correct_distorsion):
+        cv2.namedWindow(undistorted_window, cv2.WINDOW_NORMAL)
+        cv2.resizeWindow(undistorted_window, 512, 512)
+        cv2.setWindowProperty(undistorted_window, cv2.WND_PROP_TOPMOST, 1)
+        cv2.moveWindow(undistorted_window, 600, 50)
 
     with ctrl_c_handler() as ctrl_c:
         while not (quit_keypress() or ctrl_c):
@@ -189,12 +196,13 @@ def main():
                 rgb_image = cv2.cvtColor(observer.rgb_image, cv2.COLOR_BGR2RGB)
                 cv2.imshow(rgb_window, np.rot90(rgb_image, -1))
 
+                if(args.correct_distorsion):
                 # Apply the undistortion correction
-                undistorted_rgb_image = distort_by_calibration(
-                    rgb_image, dst_calib, rgb_calib
-                )
-                # Show the undistorted image
-                cv2.imshow(undistorted_window, np.rot90(undistorted_rgb_image, -1))
+                    undistorted_rgb_image = distort_by_calibration(
+                        rgb_image, dst_calib, rgb_calib
+                    )
+                    # Show the undistorted image
+                    cv2.imshow(undistorted_window, np.rot90(undistorted_rgb_image, -1))
 
                 observer.rgb_image = None
 
