@@ -1,5 +1,3 @@
-
-
 import argparse
 import sys
 
@@ -19,8 +17,101 @@ from projectaria_tools.core.sensor_data import ImageDataRecord
 import signal
 import subprocess
 from contextlib import contextmanager
+import math
 
 import cv2
+from ultralytics import YOLO
+
+
+def init_yolo():
+    # model
+    model = YOLO("yolov8n.pt")
+
+    # object classes
+    classNames = [
+        "person",
+        "bicycle",
+        "car",
+        "motorbike",
+        "aeroplane",
+        "bus",
+        "train",
+        "truck",
+        "boat",
+        "traffic light",
+        "fire hydrant",
+        "stop sign",
+        "parking meter",
+        "bench",
+        "bird",
+        "cat",
+        "dog",
+        "horse",
+        "sheep",
+        "cow",
+        "elephant",
+        "bear",
+        "zebra",
+        "giraffe",
+        "backpack",
+        "umbrella",
+        "handbag",
+        "tie",
+        "suitcase",
+        "frisbee",
+        "skis",
+        "snowboard",
+        "sports ball",
+        "kite",
+        "baseball bat",
+        "baseball glove",
+        "skateboard",
+        "surfboard",
+        "tennis racket",
+        "bottle",
+        "wine glass",
+        "cup",
+        "fork",
+        "knife",
+        "spoon",
+        "bowl",
+        "banana",
+        "apple",
+        "sandwich",
+        "orange",
+        "broccoli",
+        "carrot",
+        "hot dog",
+        "pizza",
+        "donut",
+        "cake",
+        "chair",
+        "sofa",
+        "pottedplant",
+        "bed",
+        "diningtable",
+        "toilet",
+        "tvmonitor",
+        "laptop",
+        "mouse",
+        "remote",
+        "keyboard",
+        "cell phone",
+        "microwave",
+        "oven",
+        "toaster",
+        "sink",
+        "refrigerator",
+        "book",
+        "clock",
+        "vase",
+        "scissors",
+        "teddy bear",
+        "hair drier",
+        "toothbrush",
+    ]
+    
+    return model, classNames
 
 
 def update_iptables() -> None:
@@ -77,7 +168,6 @@ def quit_keypress():
     return key == 27 or key == ord("q")
 
 
-
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -106,13 +196,12 @@ def parse_args() -> argparse.Namespace:
         "--device_ip", help="IP address to connect to the device over wifi"
     )
     parser.add_argument(
-        "--correct_distorsion", help="Apply a correction to the distortion camera",
+        "--correct_distorsion",
+        help="Apply a correction to the distortion camera",
         default=False,
-        action="store_true"
+        action="store_true",
     )
-    
-    
-    
+
     return parser.parse_args()
 
 
@@ -120,6 +209,8 @@ def main():
     args = parse_args()
     if args.update_iptables and sys.platform.startswith("linux"):
         update_iptables()
+        
+    model, classNames = init_yolo()
 
     #  Optional: Set SDK's log level to Trace or Debug for more verbose logs. Defaults to Info
     aria.set_log_level(aria.Level.Info)
@@ -183,8 +274,8 @@ def main():
     cv2.resizeWindow(rgb_window, 512, 512)
     cv2.setWindowProperty(rgb_window, cv2.WND_PROP_TOPMOST, 1)
     cv2.moveWindow(rgb_window, 50, 50)
-    
-    if(args.correct_distorsion):
+
+    if args.correct_distorsion:
         cv2.namedWindow(undistorted_window, cv2.WINDOW_NORMAL)
         cv2.resizeWindow(undistorted_window, 512, 512)
         cv2.setWindowProperty(undistorted_window, cv2.WND_PROP_TOPMOST, 1)
@@ -194,10 +285,49 @@ def main():
         while not (quit_keypress() or ctrl_c):
             if observer.rgb_image is not None:
                 rgb_image = cv2.cvtColor(observer.rgb_image, cv2.COLOR_BGR2RGB)
+                
+
+                results = model(rgb_image, stream=True)
+
+                # coordinates
+                for r in results:
+                    boxes = r.boxes
+
+                    for box in boxes:
+                        # bounding box
+                        x1, y1, x2, y2 = box.xyxy[0]
+                        x1, y1, x2, y2 = (
+                            int(x1),
+                            int(y1),
+                            int(x2),
+                            int(y2),
+                        )  # convert to int values
+
+                        # put box in cam
+                        cv2.rectangle(rgb_image, (x1, y1), (x2, y2), (255, 0, 255), 3)
+
+                        # confidence
+                        confidence = math.ceil((box.conf[0] * 100)) / 100
+                        print("Confidence --->", confidence)
+
+                        # class name
+                        cls = int(box.cls[0])
+                        print("Class name -->", classNames[cls])
+
+                        # object details
+                        org = [x1, y1]
+                        font = cv2.FONT_HERSHEY_SIMPLEX
+                        fontScale = 1
+                        color = (255, 0, 0)
+                        thickness = 2
+
+                        cv2.putText(
+                            rgb_image, classNames[cls], org, font, fontScale, color, thickness
+                        )
                 cv2.imshow(rgb_window, np.rot90(rgb_image, -1))
 
-                if(args.correct_distorsion):
-                # Apply the undistortion correction
+                if args.correct_distorsion:
+                    # Apply the undistortion correction
                     undistorted_rgb_image = distort_by_calibration(
                         rgb_image, dst_calib, rgb_calib
                     )
