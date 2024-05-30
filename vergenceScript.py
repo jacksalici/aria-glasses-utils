@@ -8,6 +8,7 @@ from projectaria_tools.core.mps.utils import (
 )
 import matplotlib.pyplot as plt
 import cv2
+from projectaria_tools.core.sensor_data import TimeDomain, TimeQueryOptions
 
 def quit_keypress():
     key = cv2.waitKey(1)
@@ -19,6 +20,17 @@ eye_gaze_path = "/Users/jacksalici/Desktop/AriaRecording/test6/mps_e3adbe21-c424
 vrs_file = "/Users/jacksalici/Desktop/AriaRecording/test6/e3adbe21-c424-4d3e-b16a-d4af25bd5d4f.vrs"
 gaze_cpfs = mps.read_eyegaze(eye_gaze_path)
 cv2.namedWindow("test", cv2.WINDOW_NORMAL)
+
+provider = data_provider.create_vrs_data_provider(vrs_file)
+rgb_stream_id = StreamId("214-1")
+t_first = provider.get_first_time_ns(rgb_stream_id, TimeDomain.DEVICE_TIME)
+t_last = provider.get_last_time_ns(rgb_stream_id, TimeDomain.DEVICE_TIME)
+rgb_stream_label = provider.get_label_from_stream_id(rgb_stream_id)
+
+
+
+device_calibration = provider.get_device_calibration()
+
 
 for index, gaze_cpf in enumerate(gaze_cpfs):
     depth_m = gaze_cpf.depth or 1.0
@@ -32,11 +44,6 @@ for index, gaze_cpf in enumerate(gaze_cpfs):
     if eye_gaze_info:
         # Re-project the eye gaze point onto the RGB camera data
         
-        provider = data_provider.create_vrs_data_provider(vrs_file)
-
-        rgb_stream_id = StreamId("214-1")
-        rgb_stream_label = provider.get_label_from_stream_id(rgb_stream_id)
-        device_calibration = provider.get_device_calibration()
         rgb_camera_calibration = device_calibration.get_camera_calib(rgb_stream_label)
 
         gaze_projection = get_gaze_vector_reprojection(
@@ -46,10 +53,12 @@ for index, gaze_cpf in enumerate(gaze_cpfs):
                                 rgb_camera_calibration,
                                 depth_m,
                             )
-        num_rgb_frames = provider.get_num_data(rgb_stream_id)
-        imagebyindex = provider.get_image_data_by_index(rgb_stream_id, index)
-        print(imagebyindex)
-        raw_image = imagebyindex[0].to_numpy_array()
+        
+        immage_data = provider.get_image_data_by_time_ns(rgb_stream_id, query_timestamp_ns, TimeDomain.DEVICE_TIME, TimeQueryOptions.CLOSEST)
+
+       
+        print(immage_data)
+        raw_image = immage_data[0].to_numpy_array()
 
 
         # Convert the image from BGR to RGB format
