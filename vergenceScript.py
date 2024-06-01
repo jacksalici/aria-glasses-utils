@@ -32,32 +32,23 @@ rgb_camera_calibration = device_calibration.get_camera_calib(rgb_stream_label)
 
 for time in range(t_first, t_last, 1000000000):
     gaze_cpf = get_nearest_eye_gaze(gaze_cpfs, time)
-    depth_m = gaze_cpf.depth or 1.0
-    gaze_point_cpf = mps.get_eyegaze_point_at_depth(gaze_cpf.yaw, gaze_cpf.pitch, depth_m)
 
-    print(gaze_point_cpf)
    
+    gaze_center_in_cpf = mps.get_eyegaze_point_at_depth(gaze_cpf.yaw, gaze_cpf.pitch, gaze_cpf.depth or 1.0)
+    transform_cpf_sensor = device_calibration.get_transform_cpf_sensor(rgb_stream_label)
+    gaze_center_in_camera = transform_cpf_sensor.inverse() @ gaze_center_in_cpf
+    gaze_center_in_pixels = rgb_camera_calibration.project(gaze_center_in_camera)
+    
+    print("GAZE CENTER IN CPF:", gaze_center_in_cpf)
+    print("GAZE CENTER IN PIXEL:", gaze_center_in_pixels)
 
-    gaze_projection = get_gaze_vector_reprojection(
-                                gaze_cpf,
-                                rgb_stream_label,
-                                device_calibration,
-                                rgb_camera_calibration,
-                                depth_m,
-                            )
     image_data = provider.get_image_data_by_time_ns(rgb_stream_id, time, TimeDomain.DEVICE_TIME, TimeQueryOptions.CLOSEST)
 
-       
+
     raw_image = image_data[0].to_numpy_array()
 
 
-    # Convert the image from BGR to RGB format
-    cv2.circle(raw_image, [int(gaze_projection[0]), int(gaze_projection[1])] , 5, (255, 0, 0), 2)
-
-
-        
-        
-    print(gaze_projection)
+    cv2.circle(raw_image, [int(gaze_center_in_pixels[0]), int(gaze_center_in_pixels[1])] , 5, (255, 0, 0), 2)
 
     
     raw_image = cv2.cvtColor(raw_image, cv2.COLOR_BGR2RGB)
