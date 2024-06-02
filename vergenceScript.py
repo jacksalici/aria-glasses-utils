@@ -1,5 +1,8 @@
+import tomllib
+config = tomllib.load(open('config.toml', 'rb'))
+
+
 import projectaria_tools.core.mps as mps
-# Example query: find the nearest eye gaze data outputs in relation to a specific timestamp
 from projectaria_tools.core import data_provider, calibration
 from projectaria_tools.core.stream_id import StreamId
 from projectaria_tools.core.mps.utils import (
@@ -17,8 +20,9 @@ def quit_keypress():
     return key == 27 or key == ord("q")
 
 
-eye_gaze_path = "/Users/jacksalici/Desktop/AriaRecording/test6/mps_e3adbe21-c424-4d3e-b16a-d4af25bd5d4f_vrs/eye_gaze/general_eye_gaze.csv"
-vrs_file = "/Users/jacksalici/Desktop/AriaRecording/test6/e3adbe21-c424-4d3e-b16a-d4af25bd5d4f.vrs"
+     
+eye_gaze_path = config['aria_recordings'][0]['general_eye_gaze']
+vrs_file = config['aria_recordings'][0]['vrs']
 gaze_cpfs = mps.read_eyegaze(eye_gaze_path)
 cv2.namedWindow("test", cv2.WINDOW_NORMAL)
 
@@ -61,7 +65,7 @@ for time in range(t_first, t_last, 1000000000):
     img = calibration.distort_by_calibration(img, calib_rgb_camera, calib_rgb_camera_original)
 
  
-    cv2.circle(img, [img_w-int(gaze_center_in_pixels[1]), int(gaze_center_in_pixels[0])] , 5, (255, 0, 0), 2)
+    cv2.circle(img, [img_w-gaze_center_in_pixels[1], gaze_center_in_pixels[0]] , 5, (255, 0, 0), 2)
     
 
     
