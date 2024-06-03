@@ -1,14 +1,7 @@
-import tomllib
-config = tomllib.load(open('config.toml', 'rb'))
-
-
 import projectaria_tools.core.mps as mps
 from projectaria_tools.core import data_provider, calibration
 from projectaria_tools.core.stream_id import StreamId
-from projectaria_tools.core.mps.utils import (
-    get_gaze_vector_reprojection,
-    get_nearest_eye_gaze
-)
+from projectaria_tools.core.mps.utils import get_nearest_eye_gaze
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
@@ -16,9 +9,6 @@ from projectaria_tools.core.sensor_data import TimeDomain, TimeQueryOptions
 from time import sleep
 
 from utils import *
-
-
-
 
 class EyeGaze:
     def __init__(self, live: bool, correct_distorsion: bool = False, rotate_image: bool = True, vrs_file = None) -> None:
@@ -29,9 +19,7 @@ class EyeGaze:
             "rgb": StreamId("214-1"),
             "et": StreamId("211-1"),
         }
-        
-        
-        
+             
         if not live:
             assert vrs_file, "VRS file is mandatory in not live streaming."
             
@@ -49,16 +37,20 @@ class EyeGaze:
             if correct_distorsion:
                 self.calib_rgb_camera = calibration.get_linear_camera_calibration(
                                 self.img_w, self.img_h,
-                                self.calib_rgb_camera.get_focal_lengths()[0],
+                                self.calib_rgb_camera_original.get_focal_lengths()[0],
                                 "pinhole",
-                                self.calib_rgb_camera.get_transform_device_camera(),
+                                self.calib_rgb_camera_original.get_transform_device_camera(),
                                 )
+                
+                if rotate_image:
+                    self.calib_rgb_camera = calibration.rotate_camera_calib_cw90deg(self.calib_rgb_camera)
+                    
             else:
                 self.calib_rgb_camera = self.calib_rgb_camera_original
-            if rotate_image:
-                assert correct_distorsion, "Rotation of the calibration must happen with the distortion corrected"
-                self.calib_rgb_camera = calibration.rotate_camera_calib_cw90deg(self.calib_rgb_camera)
-                    
+                
+                if rotate_image:
+                    print("WARNING: Calibration cannot be rotated without undistortion.")
+               
     
     def get_gaze_center(self, gaze_cpf):
         gaze_center_in_cpf = mps.get_eyegaze_point_at_depth(gaze_cpf.yaw, gaze_cpf.pitch, gaze_cpf.depth or 1.0)
@@ -91,37 +83,32 @@ class EyeGaze:
     
     
     
+def main():
+    import tomllib
+    config = tomllib.load(open('config.toml', 'rb'))
 
+    eye_gaze_path = config['aria_recordings'][0]['general_eye_gaze']
+    vrs_file = config['aria_recordings'][0]['vrs']
+    gaze_cpfs = mps.read_eyegaze(eye_gaze_path)
+    cv2.namedWindow("test", cv2.WINDOW_NORMAL)
 
-eye_gaze_path = config['aria_recordings'][0]['general_eye_gaze']
-vrs_file = config['aria_recordings'][0]['vrs']
-gaze_cpfs = mps.read_eyegaze(eye_gaze_path)
-cv2.namedWindow("test", cv2.WINDOW_NORMAL)
+    eye_gaze = EyeGaze(live = False, correct_distorsion=False, rotate_image=True, vrs_file=vrs_file)
 
+    for time in eye_gaze.get_time_range():
+        gaze_cpf = get_nearest_eye_gaze(gaze_cpfs, time)
 
+        gaze_center_in_cpf, gaze_center_in_pixels = eye_gaze.get_gaze_center(gaze_cpf)
 
-eye_gaze = EyeGaze(live = False, correct_distorsion=False, rotate_image=False, vrs_file=vrs_file)
-
-
-for time in eye_gaze.get_time_range():
-    gaze_cpf = get_nearest_eye_gaze(gaze_cpfs, time)
-
-    gaze_center_in_cpf, gaze_center_in_pixels = eye_gaze.get_gaze_center(gaze_cpf)
-   
-    print("GAZE CENTER IN CPF:", gaze_center_in_cpf)
-    print("GAZE CENTER IN PIXEL:", gaze_center_in_pixels)
-
-    img = eye_gaze.get_rgb_image(time_ns=time)
-    
-
-
-    cv2.circle(img, gaze_center_in_pixels , 5, (255, 0, 0), 2)
-    
-
-    
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    cv2.imshow("test", img)
-    sleep(0.3)
-    
-    if quit_keypress():
-        break
+        img = eye_gaze.get_rgb_image(time_ns=time)
+        
+        cv2.circle(img, eye_gaze.rotate_pixel_cw90(gaze_center_in_pixels) , 5, (255, 0, 0), 2)
+        
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        cv2.imshow("test", img)
+        sleep(0.3)
+        
+        if quit_keypress():
+            break
+        
+if __name__ == "__main__":
+    main()

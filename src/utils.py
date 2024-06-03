@@ -158,3 +158,40 @@ def draw_axes(img, pitch, yaw, roll, tx, ty, size=50):
     cv2.line(new_img, tuple(axes_points[:, 3].ravel()), tuple(axes_points[:, 1].ravel()), (0, 255, 0), 3)    
     cv2.line(new_img, tuple(axes_points[:, 3].ravel()), tuple(axes_points[:, 2].ravel()), (0, 0, 255), 3)
     return new_img
+
+import argparse
+def parse_args() -> argparse.Namespace:
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "--interface",
+            dest="streaming_interface",
+            type=str,
+            required=True,
+            help="Type of interface to use for streaming. Options are usb or wifi.",
+            choices=["usb", "wifi"],
+        )
+        parser.add_argument(
+            "--update_iptables",
+            default=False,
+            action="store_true",
+            help="Update iptables to enable receiving the data stream, only for Linux",
+        )
+        parser.add_argument(
+            "--profile",
+            dest="profile_name",
+            type=str,
+            default="profile18",
+            required=False,
+            help="Profile to be used for streaming.",
+        )
+        parser.add_argument(
+            "--device_ip", help="IP address to connect to the device over wifi"
+        )
+        parser.add_argument(
+            "--correct_distortion",
+            help="Apply a correction to the distortion camera",
+            default=False,
+            action="store_true",
+        )
+
+        return parser.parse_args()
