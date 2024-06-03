@@ -12,13 +12,14 @@ from projectaria_tools.core.calibration import (
 )
 from projectaria_tools.core.sensor_data import ImageDataRecord
 
+from functools import reduce
 
 import math
 import cv2
 from utils import *
 
 class AriaStreaming:
-    def __init__(self, args, log_level = aria.Level.Info):
+    def __init__(self, args, log_level = aria.Level.Info, cameras = 'RGB'):
         self.args = args
         if args.update_iptables and sys.platform.startswith("linux"):
             update_iptables()
@@ -49,16 +50,25 @@ class AriaStreaming:
 
         sensors_calib_json = self.streaming_manager.sensors_calibration()
         self.sensors_calib = device_calibration_from_json_string(sensors_calib_json)
-        self.rgb_calib = self.sensors_calib.get_camera_calib("camera-eye-tracking")
+        self.rgb_calib = self.sensors_calib.get_camera_calib("camera-rgb")
 
         self.dst_calib = get_linear_camera_calibration(512, 512, 150, "camera-rgb")
 
         self.streaming_manager.start_streaming()
 
         config = self.streaming_client.subscription_config
-        config.subscriber_data_type = aria.StreamingDataType.EyeTrack | aria.StreamingDataType.Rgb
-        config.message_queue_size[aria.StreamingDataType.Rgb] = 1
-        config.message_queue_size[aria.StreamingDataType.EyeTrack] = 1
+        
+
+            
+        if cameras == "RGB-ET":
+            config.subscriber_data_type = (aria.StreamingDataType.Rgb | aria.StreamingDataType.EyeTrack)
+            config.message_queue_size[aria.StreamingDataType.Rgb] = 1
+            config.message_queue_size[aria.StreamingDataType.EyeTrack] = 1
+        elif cameras == "RGB":
+            config.subscriber_data_type = aria.StreamingDataType.Rgb
+        
+        
+        
         self.streaming_client.subscription_config = config
 
         self.observer = StreamingClientObserver()
@@ -91,7 +101,7 @@ class StreamingClientObserver:
 def main():
     args = parse_args()
 
-    aria_streaming = AriaStreaming(args)
+    aria_streaming = AriaStreaming(args, cameras = "RGB-ET")
     aria_streaming.init_cv2_windows("RGB")
     aria_streaming.init_cv2_windows("ET")
 
