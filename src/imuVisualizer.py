@@ -6,24 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tomllib
     
-def draw_axes(img, pitch, yaw, roll, tx, ty, size=50):
-    yaw = -yaw
-    rotation_matrix = cv2.Rodrigues(np.array([pitch, yaw, roll]))[0].astype(np.float64)
-    axes_points = np.array([
-        [1, 0, 0, 0],
-        [0, 1, 0, 0],
-        [0, 0, 1, 0]
-    ], dtype=np.float64)
-    axes_points = rotation_matrix @ axes_points
-    axes_points = (axes_points[:2, :] * size).astype(int)
-    axes_points[0, :] = axes_points[0, :] + tx
-    axes_points[1, :] = axes_points[1, :] + ty
-    
-    new_img = img.copy()
-    cv2.line(new_img, tuple(axes_points[:, 3].ravel()), tuple(axes_points[:, 0].ravel()), (255, 0, 0), 3)    
-    cv2.line(new_img, tuple(axes_points[:, 3].ravel()), tuple(axes_points[:, 1].ravel()), (0, 255, 0), 3)    
-    cv2.line(new_img, tuple(axes_points[:, 3].ravel()), tuple(axes_points[:, 2].ravel()), (0, 0, 255), 3)
-    return new_img
+import utils
 
 
 
@@ -33,18 +16,7 @@ vrsfile = config['aria_recordings'][0]['vrs']
 provider = data_provider.create_vrs_data_provider(vrsfile)
 
 from PIL import Image
-stream_mappings = {
-    #"camera-slam-left": StreamId("1201-1"),
-    #"camera-slam-right": StreamId("1201-2"),
-    #"camera-rgb": StreamId("214-1"),
-    "camera-eyetracking": StreamId("211-1"),
-}
 
-index = 1 # sample index (as an example)
-for [stream_name, stream_id] in stream_mappings.items():
-    image = provider.get_image_data_by_index(stream_id, index)
-    Image.fromarray(image[0].to_numpy_array()).save(f'{stream_name}.png')
-"""    
 stream_id = provider.get_stream_id_from_label("imu-left")
 accel_x = []
 accel_y = []
@@ -85,4 +57,3 @@ axes[1].set_xlabel('timestamps (s)')
 axes[1].set_ylabel('gyroscope readout (rad/sec)')
 
 plt.show()
-"""
