@@ -14,158 +14,18 @@ from projectaria_tools.core.calibration import (
 )
 from projectaria_tools.core.sensor_data import ImageDataRecord
 
-import signal
-import subprocess
-from contextlib import contextmanager
+
 import math
 
 import cv2
 from ultralytics import YOLO
 
+from utils import *
 
 def init_yolo():
-    # model
     model = YOLO("yolov8n.pt")
-
-    # object classes
-    classNames = [
-        "person",
-        "bicycle",
-        "car",
-        "motorbike",
-        "aeroplane",
-        "bus",
-        "train",
-        "truck",
-        "boat",
-        "traffic light",
-        "fire hydrant",
-        "stop sign",
-        "parking meter",
-        "bench",
-        "bird",
-        "cat",
-        "dog",
-        "horse",
-        "sheep",
-        "cow",
-        "elephant",
-        "bear",
-        "zebra",
-        "giraffe",
-        "backpack",
-        "umbrella",
-        "handbag",
-        "tie",
-        "suitcase",
-        "frisbee",
-        "skis",
-        "snowboard",
-        "sports ball",
-        "kite",
-        "baseball bat",
-        "baseball glove",
-        "skateboard",
-        "surfboard",
-        "tennis racket",
-        "bottle",
-        "wine glass",
-        "cup",
-        "fork",
-        "knife",
-        "spoon",
-        "bowl",
-        "banana",
-        "apple",
-        "sandwich",
-        "orange",
-        "broccoli",
-        "carrot",
-        "hot dog",
-        "pizza",
-        "donut",
-        "cake",
-        "chair",
-        "sofa",
-        "pottedplant",
-        "bed",
-        "diningtable",
-        "toilet",
-        "tvmonitor",
-        "laptop",
-        "mouse",
-        "remote",
-        "keyboard",
-        "cell phone",
-        "microwave",
-        "oven",
-        "toaster",
-        "sink",
-        "refrigerator",
-        "book",
-        "clock",
-        "vase",
-        "scissors",
-        "teddy bear",
-        "hair drier",
-        "toothbrush",
-    ]
-    
+    classNames = yolo_class_names()
     return model, classNames
-
-
-def update_iptables() -> None:
-    """
-    Update firewall to permit incoming UDP connections for DDS
-    """
-    update_iptables_cmd = [
-        "sudo",
-        "iptables",
-        "-A",
-        "INPUT",
-        "-p",
-        "udp",
-        "-m",
-        "udp",
-        "--dport",
-        "7000:8000",
-        "-j",
-        "ACCEPT",
-    ]
-    print("Running the following command to update iptables:")
-    print(update_iptables_cmd)
-    subprocess.run(update_iptables_cmd)
-
-
-@contextmanager
-def ctrl_c_handler(signal_handler=None):
-    class ctrl_c_state:
-        def __init__(self):
-            self._caught_ctrl_c = False
-
-        def __bool__(self):
-            return self._caught_ctrl_c
-
-    state = ctrl_c_state()
-
-    def _handler(sig, frame):
-        state._caught_ctrl_c = True
-        if signal_handler:
-            signal_handler()
-
-    original_sigint_handler = signal.getsignal(signal.SIGINT)
-    signal.signal(signal.SIGINT, _handler)
-
-    try:
-        yield state
-    finally:
-        signal.signal(signal.SIGINT, original_sigint_handler)
-
-
-def quit_keypress():
-    key = cv2.waitKey(1)
-    # Press ESC, 'q'
-    return key == 27 or key == ord("q")
 
 
 def parse_args() -> argparse.Namespace:
