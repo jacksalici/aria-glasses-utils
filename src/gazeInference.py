@@ -20,10 +20,11 @@ class GazeInference():
         self._egi = EyeGazeInference(os.path.join(config['general']['projectaria_et_path'], 'inference/model/pretrained_weights/social_eyes_uncertainty_v1/weights.pth'),
                        os.path.join(config['general']['projectaria_et_path'], 'inference/model/pretrained_weights/social_eyes_uncertainty_v1/config.yaml'))
 
-    def predict(self, img):
+    def predict(self, img, verbose = False):
         start = time.time()
         preds, lower, upper = self._egi.predict(img)
-        print(f"INFO: Image processed in { time.time()-start} seconds")
+        if verbose:
+            print(f"INFO: Image processed in { time.time()-start} seconds")
         preds = preds.detach().cpu().numpy()
         lower = lower.detach().cpu().numpy()
         upper = upper.detach().cpu().numpy()
@@ -35,7 +36,9 @@ class GazeInference():
             "yaw_upper": upper[0][0],
             "pitch_upper": upper[0][1],
         }
-        return value_mapping
+        if verbose == 2:
+            print(verbose)
+        return (value_mapping['yaw'], value_mapping['pitch'])
         
         
 def main():

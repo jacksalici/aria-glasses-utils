@@ -166,7 +166,7 @@ def parse_args() -> argparse.Namespace:
             "--interface",
             dest="streaming_interface",
             type=str,
-            required=True,
+            default='usb',
             help="Type of interface to use for streaming. Options are usb or wifi.",
             choices=["usb", "wifi"],
         )

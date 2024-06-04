@@ -11,7 +11,7 @@ from time import sleep
 from utils import *
 
 class EyeGaze:
-    def __init__(self, live: bool, correct_distorsion: bool = False, rotate_image: bool = True, vrs_file = None) -> None:
+    def __init__(self, live: bool, correct_distorsion: bool = False, rotate_image: bool = True, vrs_file = None, calib_live = None) -> None:
         self.live, self.correct_distortion, self.rotate_image = live, correct_distorsion, rotate_image
         self.stream_ids = {
             "slam-l": StreamId("1201-1"),
@@ -30,34 +30,41 @@ class EyeGaze:
 
             self.calib_device = self.provider.get_device_calibration()
             
+        if live:
+            assert calib_live, "Device calibration must provided when live is done."
+            self.stream_labels = {'rgb': 'camera-rgb', 'et': 'camera-et'}
+            self.calib_device = calib_live
             
-            self.calib_rgb_camera_original = self.calib_device.get_camera_calib(self.stream_labels['rgb'])
-            self.img_w, self.img_h = int(self.calib_rgb_camera_original.get_image_size()[0]), int(self.calib_rgb_camera_original.get_image_size()[1])
+        self.calib_rgb_camera_original = self.calib_device.get_camera_calib(self.stream_labels['rgb'])
+        self.img_w, self.img_h = int(self.calib_rgb_camera_original.get_image_size()[0]), int(self.calib_rgb_camera_original.get_image_size()[1])
             
-            if correct_distorsion:
-                self.calib_rgb_camera = calibration.get_linear_camera_calibration(
+        if correct_distorsion:
+            self.calib_rgb_camera = calibration.get_linear_camera_calibration(
                                 self.img_w, self.img_h,
                                 self.calib_rgb_camera_original.get_focal_lengths()[0],
                                 "pinhole",
                                 self.calib_rgb_camera_original.get_transform_device_camera(),
                                 )
                 
-                if rotate_image:
-                    self.calib_rgb_camera = calibration.rotate_camera_calib_cw90deg(self.calib_rgb_camera)
+            if rotate_image:
+                self.calib_rgb_camera = calibration.rotate_camera_calib_cw90deg(self.calib_rgb_camera)
                     
-            else:
-                self.calib_rgb_camera = self.calib_rgb_camera_original
+        else:
+            self.calib_rgb_camera = self.calib_rgb_camera_original
                 
-                if rotate_image:
-                    print("WARNING: Calibration cannot be rotated without undistortion.")
-               
-    
+            if rotate_image:
+                print("WARNING: Calibration cannot be rotated without undistortion.")
+        
     def get_gaze_center(self, gaze_cpf):
-        gaze_center_in_cpf = mps.get_eyegaze_point_at_depth(gaze_cpf.yaw, gaze_cpf.pitch, gaze_cpf.depth or 1.0)
+        return self.get_gaze_center_raw(gaze_cpf.yaw, gaze_cpf.pitch, gaze_cpf.depth or 1.0)
+    
+    def get_gaze_center_raw (self, yaw, pitch, depth = 1.0):
+        gaze_center_in_cpf = mps.get_eyegaze_point_at_depth(yaw, pitch, depth)
         transform_cpf_sensor = self.calib_device.get_transform_cpf_sensor(self.stream_labels['rgb'])
         gaze_center_in_camera = transform_cpf_sensor.inverse() @ gaze_center_in_cpf
         gaze_center_in_pixels = self.calib_rgb_camera.project(gaze_center_in_camera).astype(int)
         return gaze_center_in_cpf, gaze_center_in_pixels
+        
     
     def rotate_pixel_cw90(self, gaze_center_in_pixels):
         return [self.img_w-gaze_center_in_pixels[1], gaze_center_in_pixels[0]]
@@ -92,7 +99,7 @@ def main():
     gaze_cpfs = mps.read_eyegaze(eye_gaze_path)
     cv2.namedWindow("test", cv2.WINDOW_NORMAL)
 
-    eye_gaze = EyeGaze(live = False, correct_distorsion=False, rotate_image=True, vrs_file=vrs_file)
+    eye_gaze = EyeGaze(live = False, correct_distorsion=True, rotate_image=True, vrs_file=vrs_file)
 
     for time in eye_gaze.get_time_range():
         gaze_cpf = get_nearest_eye_gaze(gaze_cpfs, time)
