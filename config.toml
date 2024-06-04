@@ -1,4 +1,5 @@
-
+[general]
+projectaria_et_path = '/Users/jacksalici/Documents/Thesis/smart-glasses/projectaria_eyetracking/projectaria_eyetracking'
 
 
 [[aria_recordings]]
