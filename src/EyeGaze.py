@@ -67,7 +67,7 @@ class EyeGaze:
         
     
     def rotate_pixel_cw90(self, gaze_center_in_pixels):
-        return [self.img_w-gaze_center_in_pixels[1], gaze_center_in_pixels[0]]
+        return [int(self.img_w/2) - gaze_center_in_pixels[1], gaze_center_in_pixels[0]]
     
     def get_rgb_image(self, time_ns = None, index = None):
         assert not (time_ns == None and index == None), "Time or Index must be specified"
