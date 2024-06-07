@@ -37,7 +37,7 @@ def main():
             if aria.CameraId.Rgb in aria_streaming.observer.imgs:
                 rgb_image = np.rot90(aria_streaming.observer.imgs[aria.CameraId.Rgb], -1).copy()
                 print(gaze_center_in_pixels)
-                rgb_image = cv2.circle(rgb_image, eye_gaze.rotate_pixel_cw90(gaze_center_in_pixels) , 5, (255, 0, 0), 4)
+                rgb_image = cv2.circle(rgb_image, eye_gaze.rotate_pixel_cw90(gaze_center_in_pixels, 0.5) , 5, (255, 0, 0), 4)
                 rgb_image = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2RGB)
 
                 cv2.imshow('RGB', rgb_image)

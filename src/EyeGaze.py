@@ -37,6 +37,7 @@ class EyeGaze:
             
         self.calib_rgb_camera_original = self.calib_device.get_camera_calib(self.stream_labels['rgb'])
         self.img_w, self.img_h = int(self.calib_rgb_camera_original.get_image_size()[0]), int(self.calib_rgb_camera_original.get_image_size()[1])
+
             
         if correct_distorsion:
             self.calib_rgb_camera = calibration.get_linear_camera_calibration(
@@ -55,6 +56,9 @@ class EyeGaze:
             if rotate_image:
                 print("WARNING: Calibration cannot be rotated without undistortion.")
         
+        self.img_w, self.img_h = int(self.calib_rgb_camera.get_image_size()[0]), int(self.calib_rgb_camera.get_image_size()[1])
+
+        
     def get_gaze_center(self, gaze_cpf):
         return self.get_gaze_center_raw(gaze_cpf.yaw, gaze_cpf.pitch, gaze_cpf.depth or 1.0)
     
@@ -66,8 +70,8 @@ class EyeGaze:
         return gaze_center_in_cpf, gaze_center_in_pixels
         
     
-    def rotate_pixel_cw90(self, gaze_center_in_pixels):
-        return [int(self.img_w/2) - gaze_center_in_pixels[1], gaze_center_in_pixels[0]]
+    def rotate_pixel_cw90(self, gaze_center_in_pixels, scale = 1.0):
+        return [int(self.img_w*scale) - gaze_center_in_pixels[1], gaze_center_in_pixels[0]]
     
     def get_rgb_image(self, time_ns = None, index = None):
         assert not (time_ns == None and index == None), "Time or Index must be specified"
