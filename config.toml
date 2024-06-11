@@ -9,3 +9,7 @@ general_eye_gaze = "/Users/jacksalici/Desktop/AriaRecording/test6/mps_e3adbe21-c
 [[aria_recordings]]
 #with audio
 vrs = "/Users/jacksalici/Desktop/AriaRecording/test8audio/d166d203-762e-434c-a23b-d98cf969e38b.vrs"
+
+[[aria_recordings]]
+vrs = "/Users/jacksalici/Desktop/AriaRecording/test9singleframe/5762c99d-2150-4b89-98ef-565d2a032911.vrs"
+output = "/Users/jacksalici/Desktop/AriaRecording/test9singleframe/imgs"
