@@ -12,4 +12,4 @@ The package has several script that can be uses both as singleton or as a packag
 python src/objectDetection.py --interface usb --update_iptables
 ```
 
-> ⚠️ The repository is still working progress and not meant to be used in a production environment. Please instead refer o the official documentation of the project.  
+> ⚠️ The repository is still working progress and not meant to be used in a production environment. Please instead refer to the official documentation of the project.  
