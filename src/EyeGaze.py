@@ -63,6 +63,16 @@ class EyeGaze:
         return self.get_gaze_center_raw(gaze_cpf.yaw, gaze_cpf.pitch, gaze_cpf.depth or 1.0)
     
     def get_gaze_center_raw (self, yaw, pitch, depth = 1.0):
+        """Get the gaze center both in cpf and at depth
+
+        Args:
+            yaw: mps output
+            pitch: mps output
+            depth (float, optional). Defaults to 1.0.
+
+        Returns:
+            tuple: gaze_center_in_cpf, gaze_center_in_pixels
+        """
         gaze_center_in_cpf = mps.get_eyegaze_point_at_depth(yaw, pitch, depth)
         transform_cpf_sensor = self.calib_device.get_transform_cpf_sensor(self.stream_labels['rgb'])
         gaze_center_in_camera = transform_cpf_sensor.inverse() @ gaze_center_in_cpf
