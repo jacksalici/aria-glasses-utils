@@ -12,7 +12,7 @@ import utils
 
 config = tomllib.load(open('config.toml', 'rb'))
 
-vrsfile = config['aria_recordings'][0]['vrs']
+vrsfile = config['aria_recordings']['vrs']
 provider = data_provider.create_vrs_data_provider(vrsfile)
 
 from PIL import Image

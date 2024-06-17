@@ -2,14 +2,20 @@
 projectaria_et_path = '/Users/jacksalici/Documents/Thesis/smart-glasses/projectaria_eyetracking/projectaria_eyetracking'
 
 
-[[aria_recordings]]
-vrs = "/Users/jacksalici/Desktop/AriaRecording/test6/e3adbe21-c424-4d3e-b16a-d4af25bd5d4f.vrs"
-general_eye_gaze = "/Users/jacksalici/Desktop/AriaRecording/test6/mps_e3adbe21-c424-4d3e-b16a-d4af25bd5d4f_vrs/eye_gaze/general_eye_gaze.csv"
+[aria_recordings]
 
-[[aria_recordings]]
+#vrs = "/Users/jacksalici/Desktop/AriaRecording/test6/e3adbe21-c424-4d3e-b16a-d4af25bd5d4f.vrs"
+#general_eye_gaze = "/Users/jacksalici/Desktop/AriaRecording/test6/mps_e3adbe21-c424-4d3e-b16a-d4af25bd5d4f_vrs/eye_gaze/general_eye_gaze.csv"
+
 #with audio
-vrs = "/Users/jacksalici/Desktop/AriaRecording/test8audio/d166d203-762e-434c-a23b-d98cf969e38b.vrs"
+#vrs = "/Users/jacksalici/Desktop/AriaRecording/test8audio/d166d203-762e-434c-a23b-d98cf969e38b.vrs"
 
-[[aria_recordings]]
-vrs = "/Users/jacksalici/Desktop/AriaRecording/test9singleframe/5762c99d-2150-4b89-98ef-565d2a032911.vrs"
-output = "/Users/jacksalici/Desktop/AriaRecording/test9singleframe/imgs"
+#vrs = "/Users/jacksalici/Desktop/AriaRecording/test9singleframe/5762c99d-2150-4b89-98ef-565d2a032911.vrs"
+#output = "/Users/jacksalici/Desktop/AriaRecording/test9singleframe/imgs"
+
+
+#vrs = "/Users/jacksalici/Desktop/SfmTesting/Test2/003de839-ba63-4722-b793-93cf13eca70c.vrs"
+#output = "/Users/jacksalici/Desktop/SfmTesting/Test2/GazeOutput"
+
+vrs = "/Users/jacksalici/Desktop/SfmTesting/Test3/recording.vrs"
+output = "/Users/jacksalici/Desktop/SfmTesting/Test3/GazeOutput"

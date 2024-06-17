@@ -45,7 +45,7 @@ def main():
     gaze_inference = GazeInference()
     
     
-    vrsfile = config['aria_recordings'][0]['vrs']
+    vrsfile = config['aria_recordings']['vrs']
     provider = data_provider.create_vrs_data_provider(vrsfile)
 
 

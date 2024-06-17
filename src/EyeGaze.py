@@ -108,8 +108,8 @@ def main():
     import tomllib
     config = tomllib.load(open('config.toml', 'rb'))
 
-    eye_gaze_path = config['aria_recordings'][0]['general_eye_gaze']
-    vrs_file = config['aria_recordings'][0]['vrs']
+    eye_gaze_path = config['aria_recordings']['general_eye_gaze']
+    vrs_file = config['aria_recordings']['vrs']
     gaze_cpfs = mps.read_eyegaze(eye_gaze_path)
     cv2.namedWindow("test", cv2.WINDOW_NORMAL)
 

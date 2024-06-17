@@ -32,8 +32,8 @@ def main():
 
     config = tomllib.load(open("config.toml", "rb"))
 
-    vrs_file = config["aria_recordings"][2]["vrs"]
-    output_folder = config["aria_recordings"][2]["output"]
+    vrs_file = config["aria_recordings"]["vrs"]
+    output_folder = config["aria_recordings"]["output"]
 
     import shutil
 
@@ -91,22 +91,22 @@ def main():
     import json, torch
 
     for index, img in enumerate(imgs):
-        cv2.imwrite(os.path.join(output_folder, f"img{index}.jpg"), img)
+        cv2.imwrite(os.path.join(output_folder, f"img{index}.jpg"), cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
         yaw, pitch = eye_gaze_inf.predict(torch.tensor(imgs_et[index], device="cpu"))
         gaze_center_in_cpf, gaze_center_in_pixels = eye_gaze.get_gaze_center_raw(
             yaw, pitch
-        )
+        ) 
 
         np.savez(
                 os.path.join(output_folder, f"img{index}.npz"),
-                gaze_center_in_cpf=gaze_center_in_cpf.tolist(),
-                gaze_center_in_rgb_pixels=gaze_center_in_pixels.tolist(),
+                gaze_center_in_cpf=gaze_center_in_cpf,
+                gaze_center_in_rgb_pixels=gaze_center_in_pixels,
                 gaze_center_in_rgb_frame=(
                     np.linalg.inv(rbg_camera_extrinsic)
                     @ np.append(gaze_center_in_cpf, [1])
-                )[:3].tolist(),
-                rbg_camera_extrinsic=rbg_camera_extrinsic.tolist(),
-                rbg_camera_intrinsic=eye_gaze.calib_rgb_camera.projection_params().tolist(),
+                )[:3],
+                rbg_camera_extrinsic=rbg_camera_extrinsic,
+                rbg_camera_intrinsic=eye_gaze.calib_rgb_camera.projection_params(),
             )
         print(f"INFO: File {index} saved.")
 
