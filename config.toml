@@ -1,6 +1,9 @@
 [general]
 projectaria_et_path = '/Users/jacksalici/Documents/Thesis/smart-glasses/projectaria_eyetracking/projectaria_eyetracking'
 
+[frame_extractor]
+frame_per_seconds = 0.5
+
 
 [aria_recordings]
 
@@ -18,4 +21,5 @@ projectaria_et_path = '/Users/jacksalici/Documents/Thesis/smart-glasses/projecta
 #output = "/Users/jacksalici/Desktop/SfmTesting/Test2/GazeOutput"
 
 vrs = "/Users/jacksalici/Desktop/SfmTesting/Test3/recording.vrs"
-output = "/Users/jacksalici/Desktop/SfmTesting/Test3/GazeOutput"
+output = "/Users/jacksalici/Desktop/SfmTesting/Test3/Dataset"
+gaze_output = "/Users/jacksalici/Desktop/SfmTesting/Test3/GazeOutput"

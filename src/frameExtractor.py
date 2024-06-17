@@ -34,11 +34,16 @@ def main():
 
     vrs_file = config["aria_recordings"]["vrs"]
     output_folder = config["aria_recordings"]["output"]
-
+    gaze_output_folder = config["aria_recordings"]["gaze_output"]
+    
     import shutil
-
     shutil.rmtree(output_folder, ignore_errors=True)
     os.mkdir(output_folder)
+    
+    import shutil
+    shutil.rmtree(gaze_output_folder, ignore_errors=True)
+    os.mkdir(gaze_output_folder)
+    
     stream_label_rgb = "camera-rgb"
     stream_label_et = "camera-et"
     provider = data_provider.create_vrs_data_provider(vrs_file)
@@ -61,7 +66,7 @@ def main():
 
     imgs = []
     imgs_et = []
-    for time in range(t_first, t_last, 1000_000_000):
+    for time in range(t_first, t_last, int(1000_000_000/config["frame_extractor"]["frame_per_seconds"])):
         print(f"INFO: Checking frame at time {time}")
 
         img = eye_gaze.get_rgb_image(time_ns=time)
@@ -98,7 +103,7 @@ def main():
         ) 
 
         np.savez(
-                os.path.join(output_folder, f"img{index}.npz"),
+                os.path.join(gaze_output_folder, f"img{index}.npz"),
                 gaze_center_in_cpf=gaze_center_in_cpf,
                 gaze_center_in_rgb_pixels=gaze_center_in_pixels,
                 gaze_center_in_rgb_frame=(
