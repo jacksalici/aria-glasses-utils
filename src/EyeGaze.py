@@ -10,6 +10,8 @@ from time import sleep
 
 from utils import *
 
+from gazeInference import GazeInference
+
 class EyeGaze:
     def __init__(self, live: bool, correct_distorsion: bool = False, rotate_image: bool = True, vrs_file = None, calib_live = None) -> None:
         self.live, self.correct_distortion, self.rotate_image = live, correct_distorsion, rotate_image
@@ -60,7 +62,17 @@ class EyeGaze:
 
         
     def get_gaze_center(self, gaze_cpf):
-        return self.get_gaze_center_raw(gaze_cpf.yaw, gaze_cpf.pitch, gaze_cpf.depth or 1.0)
+        print(gaze_cpf)
+        LEGACY_MODEL = False 
+        if LEGACY_MODEL:
+            return self.get_gaze_center_raw(gaze_cpf.yaw, gaze_cpf.pitch, gaze_cpf.depth or 1.0)
+        else:
+            depth, combined_yaw, combined_pitch = (
+                mps.compute_depth_and_combined_gaze_direction(
+                   gaze_cpf.vergence.left_yaw, gaze_cpf.vergence.right_yaw, gaze_cpf.pitch
+                )
+            )
+            return self.get_gaze_center_raw(combined_yaw, combined_pitch, depth)
     
     def get_gaze_center_raw (self, yaw, pitch, depth = 1.0):
         """Get the gaze center both in cpf and at depth
@@ -96,8 +108,16 @@ class EyeGaze:
             img = calibration.distort_by_calibration(img, self.calib_rgb_camera, self.calib_rgb_camera_original)
         
         return img
+
+    def get_et_image(self, time_ns = None, index = None):
+        
+        if time_ns:
+            img = self.provider.get_image_data_by_time_ns(self.stream_ids['et'], time_ns, TimeDomain.DEVICE_TIME, TimeQueryOptions.CLOSEST)[0].to_numpy_array()
+
+        
+        return img
     
-    def get_time_range(self, time_step = 1000000000):
+    def get_time_range(self, time_step = 100000000):
         return range(self.t_first, self.t_last, time_step)
     
     
@@ -112,24 +132,34 @@ def main():
     vrs_file = config['aria_recordings']['vrs']
     gaze_cpfs = mps.read_eyegaze(eye_gaze_path)
     cv2.namedWindow("test", cv2.WINDOW_NORMAL)
+    
+    gaze_inf = GazeInference()
 
     eye_gaze = EyeGaze(live = False, correct_distorsion=True, rotate_image=True, vrs_file=vrs_file)
 
     for time in eye_gaze.get_time_range():
         gaze_cpf = get_nearest_eye_gaze(gaze_cpfs, time)
-
+        if(gaze_cpf is None):
+            continue
         gaze_center_in_cpf, gaze_center_in_pixels = eye_gaze.get_gaze_center(gaze_cpf)
 
         img = eye_gaze.get_rgb_image(time_ns=time)
+        img_et=eye_gaze.get_et_image(time_ns=time)
         
-        cv2.circle(img, eye_gaze.rotate_pixel_cw90(gaze_center_in_pixels) , 5, (255, 0, 0), 2)
+        yaw, pitch = gaze_inf.predict(gaze_inf.a2t(img_et)) 
+        gaze_center_in_cpf2, gaze_center_in_pixels2 = eye_gaze.get_gaze_center_raw(yaw, pitch)
+
+        
+        cv2.circle(img, gaze_center_in_pixels , 5, (255, 0, 0), 2)
+        cv2.circle(img, gaze_center_in_pixels2 , 5, (255, 255, 0), 2)
         
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         cv2.imshow("test", img)
-        sleep(0.3)
+        cv2.waitKey()
         
         if quit_keypress():
-            break
+            #break
+            pass
         
 if __name__ == "__main__":
     main()

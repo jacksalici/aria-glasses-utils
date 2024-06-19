@@ -39,6 +39,9 @@ class GazeInference():
         if verbose == 2:
             print(verbose)
         return (value_mapping['yaw'], value_mapping['pitch'])
+    
+    def a2t(self, image):
+        return torch.tensor(image, device='cpu')
         
         
 def main():
