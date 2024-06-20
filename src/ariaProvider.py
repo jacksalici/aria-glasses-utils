@@ -9,7 +9,7 @@ from enum import Enum
 import typing
 
 #project aria libraries
-from projectaria_tools.core import data_provider, image
+from projectaria_tools.core import data_provider, image, calibration
 from projectaria_tools.core.stream_id import StreamId
 from projectaria_tools.core.sensor_data import TimeDomain, TimeQueryOptions
 
@@ -33,8 +33,83 @@ class Streams(Enum):
             "SLAM_L": "camera-slam-left",
             "SLAM_R": "camera-slam-right",
         }[self.name]
-    
 
+class CustomCalibration():
+    def __init__(self, stream: Streams, device_calib):
+          
+        self.original_calib = device_calib.get_camera_calib(stream)
+        img_rgb_w, img_rgb_h = int(self.original_calib.get_image_size()[0]), int(self.calib_rgb_camera_original.get_image_size()[1])
+
+        self.pinhole_calib = calibration.get_linear_camera_calibration(
+                                    #img_rgb_w, img_rgb_h,
+                                    #calib_rgb_camera_original.get_focal_lengths()[0],
+                                    512, 512, 200, #calib_rgb_camera_original.get_focal_lengths()[0],
+                                    "pinhole",
+                                    self.original_calib.get_transform_device_camera(),
+                                    )
+                    
+        self.rotated_pinhole_calib = calibration.rotate_camera_calib_cw90deg(self.pinhole_calib)
+        
+ 
+
+class AriaProvider:
+    
+    
+    def __init__(self, config_path):
+        self.__config = tomllib.load(open(config_path, "rb"))
+        self.__vrs_file = self.__config["aria_recordings"]["vrs"]
+        #self.output_folder = self.__config["aria_recordings"]["output"]
+        #self.gaze_output_folder = self.__config["aria_recordings"]["gaze_output"]
+        
+        self.__provider = data_provider.create_vrs_data_provider(self.__vrs_file)  
+      
+        self.t_first = self.__provider.get_first_time_ns(Streams.RGB, TimeDomain.DEVICE_TIME)
+        self.t_last = self.__provider.get_last_time_ns(Streams.RGB, TimeDomain.DEVICE_TIME)
+        
+        self.calibration_device = self.__provider.get_device_calibration()
+        self.customCalibrations: typing.Dict[Streams, CustomCalibration] = {}
+        for s in Streams:
+            self.customCalibrations[s] = CustomCalibration(s.value, self.calibration_device)  
+
+    
+    def get_time_range(self, time_step = 1e9):
+        return range(self.t_first, self.t_last, time_step)
+    
+    def get_frame(self, stream: Streams, nanoseconds, rotated = True, undistorted = True):
+        img = self.__provider.get_image_data_by_time_ns(
+                stream, nanoseconds, TimeDomain.DEVICE_TIME, TimeQueryOptions.CLOSEST
+            )[0].to_numpy_array()
+        
+        
+        if undistorted:
+            if rotated:
+                img = np.rot90(img, -1).copy()
+                img = calibration.distort_by_calibration(img, self.customCalibrations[stream].rotated_pinhole_calib, self.customCalibrations[stream].original_calib)
+            else:
+                img = calibration.distort_by_calibration(img, self.customCalibrations[stream].pinhole_calib, self.customCalibrations[stream].original_calib)
+        elif rotated:
+            img = np.rot90(img, -1).copy()
+        
+        return img
+
+
+          
+
+    def save_results(self, imgs, imgs_et):
+        for index, img in enumerate(imgs):
+            cv2.imwrite(os.path.join(self.output_folder, f"img{index}.jpg"), cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            yaw, pitch = self.eye_gaze_inf.predict(torch.tensor(imgs_et[index], device="cpu"))
+            gaze_center_in_cpf, gaze_center_in_pixels = self.eye_gaze.get_gaze_center_raw(yaw, pitch)
+
+            np.savez(
+                os.path.join(self.gaze_output_folder, f"img{index}.npz"),
+                gaze_center_in_cpf=gaze_center_in_cpf,
+                gaze_center_in_rgb_pixels=gaze_center_in_pixels,
+                gaze_center_in_rgb_frame=(np.linalg.inv(self.rbg_camera_extrinsic) @ np.append(gaze_center_in_cpf, [1]))[:3],
+                rbg_camera_extrinsic=self.rbg_camera_extrinsic,
+                rbg_camera_intrinsic=self.eye_gaze.calib_rgb_camera.projection_params(),
+            )
+            print(f"INFO: File {index} saved.")
 
 if __name__ == "__main__":
     print(Streams.ET.label())

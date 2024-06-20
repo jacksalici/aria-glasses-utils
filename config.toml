@@ -5,7 +5,7 @@ projectaria_et_path = '/Users/jacksalici/Documents/Thesis/smart-glasses/projecta
 frame_per_seconds = 0.5
 
 [depth_estimator]
-frame_per_seconds = 1
+frame_per_seconds = 0.2
 
 
 
@@ -24,6 +24,9 @@ frame_per_seconds = 1
 #vrs = "/Users/jacksalici/Desktop/SfmTesting/Test2/003de839-ba63-4722-b793-93cf13eca70c.vrs"
 #output = "/Users/jacksalici/Desktop/SfmTesting/Test2/GazeOutput"
 
-vrs = "/Users/jacksalici/Desktop/SfmTesting/Test3/recording.vrs"
-output = "/Users/jacksalici/Desktop/SfmTesting/Test3/Dataset"
-gaze_output = "/Users/jacksalici/Desktop/SfmTesting/Test3/GazeOutput"
+#vrs = "/Users/jacksalici/Desktop/SfmTesting/Test3/recording.vrs"
+#output = "/Users/jacksalici/Desktop/SfmTesting/Test3/Dataset"
+#gaze_output = "/Users/jacksalici/Desktop/SfmTesting/Test3/GazeOutput"
+
+vrs = "/Users/jacksalici/Desktop/AriaRecording/test10/recording.vrs"
+general_eye_gaze = '/Users/jacksalici/Desktop/AriaRecording/test10/mps_51359c26-4faa-435b-97d9-733e84a495bf_vrs/eye_gaze/general_eye_gaze.csv'
