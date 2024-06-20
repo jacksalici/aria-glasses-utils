@@ -42,29 +42,20 @@ class EyeGaze:
 
             
         if correct_distorsion:
-            self.calib_rgb_camera = calibration.get_linear_camera_calibration(
+            self.calib_rgb_camera_pinhole = calibration.get_linear_camera_calibration(
                                 self.img_w, self.img_h,
+                                # 1080, 1080,
                                 self.calib_rgb_camera_original.get_focal_lengths()[0],
                                 "pinhole",
                                 self.calib_rgb_camera_original.get_transform_device_camera(),
                                 )
                 
             if rotate_image:
-                self.calib_rgb_camera = calibration.rotate_camera_calib_cw90deg(self.calib_rgb_camera)
+                self.calib_rgb_camera_pinhole_cw90 = calibration.rotate_camera_calib_cw90deg(self.calib_rgb_camera_pinhole)
                     
-        else:
-            self.calib_rgb_camera = self.calib_rgb_camera_original
-                
-            if rotate_image:
-                print("WARNING: Calibration cannot be rotated without undistortion.")
         
-        self.img_w, self.img_h = int(self.calib_rgb_camera.get_image_size()[0]), int(self.calib_rgb_camera.get_image_size()[1])
-
-        
-    def get_gaze_center(self, gaze_cpf):
-        print(gaze_cpf)
-        LEGACY_MODEL = False 
-        if LEGACY_MODEL:
+    def get_gaze_center(self, gaze_cpf, legacy_model=True):
+        if legacy_model:
             return self.get_gaze_center_raw(gaze_cpf.yaw, gaze_cpf.pitch, gaze_cpf.depth or 1.0)
         else:
             depth, combined_yaw, combined_pitch = (
@@ -88,31 +79,37 @@ class EyeGaze:
         gaze_center_in_cpf = mps.get_eyegaze_point_at_depth(yaw, pitch, depth)
         transform_cpf_sensor = self.calib_device.get_transform_cpf_sensor(self.stream_labels['rgb'])
         gaze_center_in_camera = transform_cpf_sensor.inverse() @ gaze_center_in_cpf
-        gaze_center_in_pixels = self.calib_rgb_camera.project(gaze_center_in_camera).astype(int)
+        
+        if self.correct_distortion:
+            gaze_center_in_pixels = self.calib_rgb_camera_pinhole.project(gaze_center_in_camera).astype(int)
+        else:
+            gaze_center_in_pixels = self.calib_rgb_camera_original.project(gaze_center_in_camera).astype(int)
+            
+        if self.rotate_image:
+            gaze_center_in_pixels = self.rotate_pixel_cw90(gaze_center_in_pixels)
+        
         return gaze_center_in_cpf, gaze_center_in_pixels
         
     
     def rotate_pixel_cw90(self, gaze_center_in_pixels, scale = 1.0):
         return [int(self.img_w*scale) - gaze_center_in_pixels[1], gaze_center_in_pixels[0]]
     
-    def get_rgb_image(self, time_ns = None, index = None):
-        assert not (time_ns == None and index == None), "Time or Index must be specified"
+    def get_rgb_image(self, time_ns):
         
-        if time_ns:
-            img = self.provider.get_image_data_by_time_ns(self.stream_ids['rgb'], time_ns, TimeDomain.DEVICE_TIME, TimeQueryOptions.CLOSEST)[0].to_numpy_array()
+        img = self.provider.get_image_data_by_time_ns(self.stream_ids['rgb'], time_ns, TimeDomain.DEVICE_TIME, TimeQueryOptions.CLOSEST)[0].to_numpy_array()
+
+        if self.correct_distortion:
+            img = calibration.distort_by_calibration(img, self.calib_rgb_camera_pinhole, self.calib_rgb_camera_original)
 
         if self.rotate_image:
             img = np.rot90(img, -1).copy()
         
-        if self.correct_distortion:
-            img = calibration.distort_by_calibration(img, self.calib_rgb_camera, self.calib_rgb_camera_original)
         
         return img
 
-    def get_et_image(self, time_ns = None, index = None):
+    def get_et_image(self, time_ns = None):
         
-        if time_ns:
-            img = self.provider.get_image_data_by_time_ns(self.stream_ids['et'], time_ns, TimeDomain.DEVICE_TIME, TimeQueryOptions.CLOSEST)[0].to_numpy_array()
+        img = self.provider.get_image_data_by_time_ns(self.stream_ids['et'], time_ns, TimeDomain.DEVICE_TIME, TimeQueryOptions.CLOSEST)[0].to_numpy_array()
 
         
         return img
@@ -144,10 +141,10 @@ def main():
         gaze_center_in_cpf, gaze_center_in_pixels = eye_gaze.get_gaze_center(gaze_cpf)
 
         img = eye_gaze.get_rgb_image(time_ns=time)
-        img_et=eye_gaze.get_et_image(time_ns=time)
+        img_et = eye_gaze.get_et_image(time_ns=time)
         
         yaw, pitch = gaze_inf.predict(gaze_inf.a2t(img_et)) 
-        gaze_center_in_cpf2, gaze_center_in_pixels2 = eye_gaze.get_gaze_center_raw(yaw, pitch)
+        gaze_center_in_cpf2, gaze_center_in_pixels2 = eye_gaze.get_gaze_center_raw(yaw, pitch, 0.5)
 
         
         cv2.circle(img, gaze_center_in_pixels , 5, (255, 0, 0), 2)
@@ -155,11 +152,10 @@ def main():
         
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         cv2.imshow("test", img)
-        cv2.waitKey()
         
         if quit_keypress():
-            #break
-            pass
+            break
+            
         
 if __name__ == "__main__":
     main()
