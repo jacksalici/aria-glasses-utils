@@ -7,10 +7,15 @@ from utils import *
 
 from eyeGaze import EyeGaze
 from gazeInference import GazeInference
+from ariaProvider import *
+
+
 import cv2
 import numpy as np
 
 import os
+
+
 
 
 def confidence(img1, img2):
@@ -31,61 +36,45 @@ def main():
     import tomllib
 
     config = tomllib.load(open("config.toml", "rb"))
+    
+    provider = AriaProvider("config.toml")
 
-    vrs_file = config["aria_recordings"]["vrs"]
     output_folder = config["aria_recordings"]["output"]
-    gaze_output_folder = config["aria_recordings"]["gaze_output"]
+    #gaze_output_folder = config["aria_recordings"]["gaze_output"]
     
     import shutil
     shutil.rmtree(output_folder, ignore_errors=True)
     os.mkdir(output_folder)
     
-    import shutil
-    shutil.rmtree(gaze_output_folder, ignore_errors=True)
-    os.mkdir(gaze_output_folder)
+    #shutil.rmtree(gaze_output_folder, ignore_errors=True)
+    #os.mkdir(gaze_output_folder)
     
-    stream_label_rgb = "camera-rgb"
-    stream_label_et = "camera-et"
-    provider = data_provider.create_vrs_data_provider(vrs_file)
+    gaze_inf = GazeInference()
 
-    stream_id_rgb = provider.get_stream_id_from_label(stream_label_rgb)
-    stream_id_et = provider.get_stream_id_from_label(stream_label_et)
-    t_first = provider.get_first_time_ns(stream_id_rgb, TimeDomain.DEVICE_TIME)
-    t_last = provider.get_last_time_ns(stream_id_rgb, TimeDomain.DEVICE_TIME)
-
-    calib_device = provider.get_device_calibration()
-
-    eye_gaze = EyeGaze(
-        live=False, correct_distorsion=True, rotate_image=True, vrs_file=vrs_file
-    )
-    eye_gaze_inf = GazeInference()
-
-    rbg_camera_extrinsic = calib_device.get_transform_cpf_sensor(
-        stream_label_rgb
-    ).to_matrix()
-
+    
     imgs = []
     imgs_et = []
-    for time in range(t_first, t_last, int(1000_000_000/config["frame_extractor"]["frame_per_seconds"])):
+    for time in provider.get_time_range():
         print(f"INFO: Checking frame at time {time}")
+        frame = {}
+        
+        frame['rgb'] = provider.get_frame(Streams.RGB, time_ns=time)
+        img_et = provider.get_frame(Streams.ET, time, False, False)
+        
+        frame['slam_l'] = provider.get_frame(Streams.SLAM_L, time)
+        frame['slam_r'] = provider.get_frame(Streams.SLAM_R, time)
+        
+        
 
-        img = eye_gaze.get_rgb_image(time_ns=time)
-        img_et = provider.get_image_data_by_time_ns(
-            stream_id_et, time, TimeDomain.DEVICE_TIME, TimeQueryOptions.CLOSEST
-        )[0].to_numpy_array()
 
-        if len(imgs) == 0:
-            imgs.append(img)
+        if (len(imgs) > 0 and confidence(frame["rgb"], imgs[-1]["rgb"]) < 0.7) or len(imgs) == 0:
+            imgs.append(frame)
             imgs_et.append(img_et)
-            print(f"INFO: Frame added to the list.")
-
-        if len(imgs) > 0 and confidence(img, imgs[-1]) < 0.7:
-            imgs.append(img)
-            imgs_et.append(img_et)
+            
             print(f"INFO: Frame added to the list.")
         else:
-            if blurryness(img) < blurryness(imgs[-1]):
-                imgs[-1] = img
+            if blurryness(frame["rgb"]) < blurryness(imgs[-1]["rgb"]):
+                imgs[-1] = frame
                 print(
                     f"INFO: Frame substituted to the last in the list for better sharpness."
                 )
@@ -93,16 +82,19 @@ def main():
         # cv2.circle(img, eye_gaze.rotate_pixel_cw90(gaze_center_in_pixels) , 5, (255, 0, 0), 2)
         # sleep(0.3)
 
-    import json, torch
+    import torch
 
-    for index, img in enumerate(imgs):
-        cv2.imwrite(os.path.join(output_folder, f"img{index}.jpg"), cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-        yaw, pitch = eye_gaze_inf.predict(torch.tensor(imgs_et[index], device="cpu"))
-        gaze_center_in_cpf, gaze_center_in_pixels = eye_gaze.get_gaze_center_raw(
-            yaw, pitch
-        ) 
+    for index, frame in enumerate(imgs):
+        
+        for name,img in frame.items():
+            cv2.imwrite(os.path.join(output_folder, f"img{index}{name}.jpg"), cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+        
+        yaw, pitch = gaze_inf.predict(torch.tensor(imgs_et[index], device="cpu"))
+        #gaze_center_in_cpf, gaze_center_in_pixels = eye_gaze.get_gaze_center_raw(
+            #yaw, pitch
+        #) 
 
-        np.savez(
+        """ np.savez(
                 os.path.join(gaze_output_folder, f"img{index}.npz"),
                 gaze_center_in_cpf=gaze_center_in_cpf,
                 gaze_center_in_rgb_pixels=gaze_center_in_pixels,
@@ -112,7 +104,7 @@ def main():
                 )[:3],
                 rbg_camera_extrinsic=rbg_camera_extrinsic,
                 rbg_camera_intrinsic=eye_gaze.calib_rgb_camera.projection_params(),
-            )
+            ) """
         print(f"INFO: File {index} saved.")
 
 
