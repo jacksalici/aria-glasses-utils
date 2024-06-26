@@ -7,7 +7,7 @@ from utils import *
 
 from eyeGaze import EyeGaze
 from gazeInference import GazeInference
-from ariaProvider import *
+from betterAriaProvider import *
 
 
 import cv2
@@ -37,20 +37,20 @@ def main():
 
     config = tomllib.load(open("config.toml", "rb"))
     
-    provider = AriaProvider("config.toml")
+    provider = BetterAriaProvider("config.toml")
 
     output_folder = config["aria_recordings"]["output"]
-    #gaze_output_folder = config["aria_recordings"]["gaze_output"]
+    gaze_output_folder = config["aria_recordings"]["gaze_output"]
     
     import shutil
     shutil.rmtree(output_folder, ignore_errors=True)
     os.mkdir(output_folder)
     
-    #shutil.rmtree(gaze_output_folder, ignore_errors=True)
-    #os.mkdir(gaze_output_folder)
+    shutil.rmtree(gaze_output_folder, ignore_errors=True)
+    os.mkdir(gaze_output_folder)
     
     gaze_inf = GazeInference()
-
+    eye_gaze = EyeGaze(False, vrs_file=config["aria_recordings"]["vrs"])
     
     imgs = []
     imgs_et = []
@@ -83,6 +83,10 @@ def main():
         # sleep(0.3)
 
     import torch
+    
+    extrinsic_cam_rgb = provider.calibration_device.get_transform_cpf_sensor(
+        Streams.RGB.label()
+    ).to_matrix()
 
     for index, frame in enumerate(imgs):
         
@@ -90,21 +94,22 @@ def main():
             cv2.imwrite(os.path.join(output_folder, f"img{index}{name}.jpg"), cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
         
         yaw, pitch = gaze_inf.predict(torch.tensor(imgs_et[index], device="cpu"))
-        #gaze_center_in_cpf, gaze_center_in_pixels = eye_gaze.get_gaze_center_raw(
-            #yaw, pitch
-        #) 
+        gaze_center_in_cpf, gaze_center_in_pixels = eye_gaze.get_gaze_center_raw(
+            yaw, pitch
+        ) 
 
-        """ np.savez(
+        np.savez(
                 os.path.join(gaze_output_folder, f"img{index}.npz"),
+                gaze_yaw_pitch=np.array([yaw, pitch]),
                 gaze_center_in_cpf=gaze_center_in_cpf,
                 gaze_center_in_rgb_pixels=gaze_center_in_pixels,
                 gaze_center_in_rgb_frame=(
-                    np.linalg.inv(rbg_camera_extrinsic)
+                    np.linalg.inv(extrinsic_cam_rgb)
                     @ np.append(gaze_center_in_cpf, [1])
                 )[:3],
-                rbg_camera_extrinsic=rbg_camera_extrinsic,
-                rbg_camera_intrinsic=eye_gaze.calib_rgb_camera.projection_params(),
-            ) """
+                rbg_camera_extrinsic=extrinsic_cam_rgb,
+                rbg_camera_intrinsic=eye_gaze.getCameraCalib().projection_params(),
+            )
         print(f"INFO: File {index} saved.")
 
 
