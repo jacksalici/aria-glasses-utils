@@ -35,17 +35,21 @@ class Streams(Enum):
         }[self.name]
 
 class CustomCalibration():
-    def __init__(self, stream: Streams, device_calib):
+    def __init__(self, stream: Streams, device_calib, fix_size = False):
         
         if stream != Streams.ET:
             self.original_calib = device_calib.get_camera_calib(stream.label())
-            img_rgb_w, img_rgb_h = int(self.original_calib.get_image_size()[0]), int(self.original_calib.get_image_size()[1])
+            
+            if fix_size:
+                img_w, img_h, img_f = 512, 512, 200
+            else:    
+                img_w, img_h, img_f = int(self.original_calib.get_image_size()[0]), int(self.original_calib.get_image_size()[1]), self.original_calib.get_focal_lengths()[0]
 
             self.pinhole_calib = calibration.get_linear_camera_calibration(
                                         #img_rgb_w, img_rgb_h,
                                         #calib_rgb_camera_original.get_focal_lengths()[0],
-                                        512, 512, 200, #calib_rgb_camera_original.get_focal_lengths()[0],
-                                        "pinhole",
+                                        img_w, img_h, img_f,
+                                        "pinhole_"+stream.name,
                                         self.original_calib.get_transform_device_camera(),
                                         )
                         
@@ -53,7 +57,7 @@ class CustomCalibration():
             
     
 
-class AriaProvider:
+class BetterAriaProvider:
     
     
     def __init__(self, config_path):

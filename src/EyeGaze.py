@@ -104,8 +104,17 @@ class EyeGaze:
         if self.rotate_image:
             img = np.rot90(img, -1).copy()
         
-        
         return img
+    
+    def getCameraCalib(self):
+        if self.correct_distortion:
+            if self.rotate_image:
+                return self.calib_rgb_camera_pinhole_cw90
+            return self.calib_rgb_camera_pinhole
+        return self.calib_rgb_camera_original
+
+        
+        
 
     def get_et_image(self, time_ns = None):
         
