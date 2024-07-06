@@ -50,7 +50,7 @@ def main():
     os.mkdir(gaze_output_folder)
     
     gaze_inf = GazeInference()
-    eye_gaze = EyeGaze(False, vrs_file=config["aria_recordings"]["vrs"])
+    eye_gaze = EyeGaze(False, correct_distorsion=True, vrs_file=config["aria_recordings"]["vrs"])
     
     imgs = []
     imgs_et = []
