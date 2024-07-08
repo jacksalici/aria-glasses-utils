@@ -18,6 +18,7 @@ from projectaria_tools.core.sensor_data import TimeDomain, TimeQueryOptions
 from time import sleep
 import os, time
 from utils import *
+import torch
 
 
 class GazeInference():
@@ -218,41 +219,48 @@ class BetterEyeGaze:
         if self.gaze_inference == None:
             raise "Gaze Inference must be initialized before making a prediction"
         
-        try:
+        if torch.is_tensor(img):
             return self.gaze_inference.predict(img)
-        except:
+        else:
             return self.gaze_inference.predict(self.gaze_inference.a2t(img))
         
 
 
 def main():
+    GENERAL_GAZE = False
 
-    eye_gaze_path = config["aria_recordings"]["general_eye_gaze"]
+    if GENERAL_GAZE:
+        eye_gaze_path = config["aria_recordings"]["general_eye_gaze"]
+        gaze_cpfs = mps.read_eyegaze(eye_gaze_path)
+
     vrs_file = config["aria_recordings"]["vrs"]
-    gaze_cpfs = mps.read_eyegaze(eye_gaze_path)
     cv2.namedWindow("test", cv2.WINDOW_NORMAL)
 
-    gaze_inf = GazeInference()
 
-    eye_gaze = EyeGaze(
+    eye_gaze = BetterEyeGaze(
         live=False, correct_distorsion=True, rotate_image=True, vrs_file=vrs_file
     )
 
     for time in eye_gaze.get_time_range():
-        gaze_cpf = get_nearest_eye_gaze(gaze_cpfs, time)
-        if gaze_cpf is None:
-            continue
-        gaze_center_in_cpf, gaze_center_in_pixels = eye_gaze.get_gaze_center(gaze_cpf)
-
         img = eye_gaze.get_rgb_image(time_ns=time)
         img_et = eye_gaze.get_et_image(time_ns=time)
+        
+        
+        if GENERAL_GAZE:
+            gaze_cpf = get_nearest_eye_gaze(gaze_cpfs, time)
+            if gaze_cpf is None:
+                continue
+            gaze_center_in_cpf, gaze_center_in_pixels = eye_gaze.get_gaze_center(gaze_cpf)
+            cv2.circle(img, gaze_center_in_pixels, 5, (255, 0, 0), 2)
 
-        yaw, pitch = gaze_inf.predict(gaze_inf.a2t(img_et))
+        
+
+        yaw, pitch = eye_gaze.predict(img_et)
         gaze_center_in_cpf2, gaze_center_in_pixels2 = eye_gaze.get_gaze_center_raw(
             yaw, pitch, 0.5
         )
 
-        cv2.circle(img, gaze_center_in_pixels, 5, (255, 0, 0), 2)
+        
         cv2.circle(img, gaze_center_in_pixels2, 5, (255, 255, 0), 2)
 
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)

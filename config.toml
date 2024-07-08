@@ -1,5 +1,5 @@
 [general]
-projectaria_et_path = '/Users/jacksalici/Documents/Thesis/smart-glasses/projectaria_eyetracking/projectaria_eyetracking'
+projectaria_et_path = '/Users/jacksalici/Documents/Thesis/sfm-gaze-dataset/aria-glasses-utils/projectaria_eyetracking/projectaria_eyetracking'
 
 [frame_extractor]
 frame_per_seconds = 0.5
