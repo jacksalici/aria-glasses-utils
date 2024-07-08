@@ -15,9 +15,7 @@ from projectaria_tools.core.sensor_data import TimeDomain, TimeQueryOptions
 
 #project classes
 from utils import *
-from eyeGaze import EyeGaze
-from gazeInference import GazeInference
-
+from BetterEyeGaze import BetterEyeGaze
 
 
 class Streams(Enum):
@@ -55,10 +53,7 @@ class CustomCalibration():
                         
             self.rotated_pinhole_calib = calibration.rotate_camera_calib_cw90deg(self.pinhole_calib)
             
-    
-
 class BetterAriaProvider:
-    
     
     def __init__(self, config_path):
         self.__config = tomllib.load(open(config_path, "rb"))
@@ -75,7 +70,6 @@ class BetterAriaProvider:
         self.customCalibrations: typing.Dict[Streams, CustomCalibration] = {}
         for s in Streams:
             self.customCalibrations[s] = CustomCalibration(s, self.calibration_device)  
-
     
     def get_time_range(self, time_step = 1e9):
         return range(self.t_first, self.t_last, int(time_step))
@@ -84,7 +78,6 @@ class BetterAriaProvider:
         img = self.__provider.get_image_data_by_time_ns(
                 stream.value, time_ns, TimeDomain.DEVICE_TIME, TimeQueryOptions.CLOSEST
             )[0].to_numpy_array()
-        
         
         if undistorted:
             if rotated:
@@ -96,7 +89,6 @@ class BetterAriaProvider:
             img = np.rot90(img, -1).copy()
         
         return img
-
 
 if __name__ == "__main__":
     print(Streams.ET)

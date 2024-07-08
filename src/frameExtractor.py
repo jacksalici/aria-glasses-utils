@@ -5,9 +5,8 @@ from projectaria_tools.core.sensor_data import TimeDomain, TimeQueryOptions
 from utils import *
 
 
-from eyeGaze import EyeGaze
-from gazeInference import GazeInference
-from betterAriaProvider import *
+from BetterEyeGaze import BetterEyeGaze
+from BetterAriaProvider import *
 
 
 import cv2
@@ -49,8 +48,7 @@ def main():
     shutil.rmtree(gaze_output_folder, ignore_errors=True)
     os.mkdir(gaze_output_folder)
     
-    gaze_inf = GazeInference()
-    eye_gaze = EyeGaze(False, correct_distorsion=True, vrs_file=config["aria_recordings"]["vrs"])
+    eye_gaze = BetterEyeGaze(False, correct_distorsion=True, vrs_file=config["aria_recordings"]["vrs"])
     
     imgs = []
     imgs_et = []
@@ -93,7 +91,7 @@ def main():
         for name,img in frame.items():
             cv2.imwrite(os.path.join(output_folder, f"img{index}{name}.jpg"), cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
         
-        yaw, pitch = gaze_inf.predict(torch.tensor(imgs_et[index], device="cpu"))
+        yaw, pitch = eye_gaze.predict(torch.tensor(imgs_et[index], device="cpu"))
         gaze_center_in_cpf, gaze_center_in_pixels = eye_gaze.get_gaze_center_raw(
             yaw, pitch
         ) 
