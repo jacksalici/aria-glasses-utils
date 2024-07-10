@@ -2,11 +2,11 @@ from projectaria_tools.core import data_provider, image
 from projectaria_tools.core.stream_id import StreamId
 from projectaria_tools.core.sensor_data import TimeDomain, TimeQueryOptions
 
-from utils import *
+from .utils import *
 
 
-from BetterEyeGaze import BetterEyeGaze
-from BetterAriaProvider import *
+from .BetterEyeGaze import BetterEyeGaze
+from .BetterAriaProvider import *
 
 
 import cv2

@@ -11,7 +11,8 @@
 The package has several script that can be uses both as singleton or as a package. For instance, to trigger the object detection script:
 
 ```sh
-python src/objectDetection.py --interface usb --update_iptables
+pip install -e .
+python scripts/objectDetection.py 
 ```
 
 

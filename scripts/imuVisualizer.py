@@ -6,7 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tomllib
     
-import utils
+
+from aria_glasses_utils import utils
 
 
 

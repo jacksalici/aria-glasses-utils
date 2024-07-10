@@ -20,7 +20,9 @@ import math
 import cv2
 from ultralytics import YOLO
 
-from utils import *
+from aria_glasses_utils.utils import *
+from aria_glasses_utils.ariaStreaming import AriaStreaming
+
 
 def init_yolo():
     model = YOLO("yolov8n.pt")
@@ -48,7 +50,6 @@ def draw_bounding_boxes(results, img, classNames):
     
     return img
     
-from ariaStreaming import AriaStreaming            
 
 def main():
     args = parse_args()

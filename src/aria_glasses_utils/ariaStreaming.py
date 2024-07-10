@@ -16,7 +16,7 @@ from functools import reduce
 
 import math
 import cv2
-from utils import *
+from .utils import *
 
 class AriaStreaming:
     def __init__(self, args, log_level = aria.Level.Info, cameras = 'RGB'):

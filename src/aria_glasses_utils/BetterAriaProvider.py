@@ -14,8 +14,8 @@ from projectaria_tools.core.stream_id import StreamId
 from projectaria_tools.core.sensor_data import TimeDomain, TimeQueryOptions
 
 #project classes
-from utils import *
-from BetterEyeGaze import BetterEyeGaze
+from .utils import *
+from .BetterEyeGaze import BetterEyeGaze
 
 
 class Streams(Enum):
