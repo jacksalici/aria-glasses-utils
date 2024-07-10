@@ -3,9 +3,6 @@ import tomllib
 
 config = tomllib.load(open('config.toml', 'rb'))
 
-sys.path.insert(1, config['general']['projectaria_et_path'])
-
-from inference.infer import EyeGazeInference
 
 import projectaria_tools.core.mps as mps
 from projectaria_tools.core import data_provider, calibration
@@ -19,12 +16,15 @@ from time import sleep
 import os, time
 from utils import *
 import torch
+from pathlib import Path 
 
 
 class GazeInference():
-    def __init__(self) -> None:
-        self._egi = EyeGazeInference(os.path.join(config['general']['projectaria_et_path'], 'inference/model/pretrained_weights/social_eyes_uncertainty_v1/weights.pth'),
-                       os.path.join(config['general']['projectaria_et_path'], 'inference/model/pretrained_weights/social_eyes_uncertainty_v1/config.yaml'))
+    def __init__(self, device = 'cpu') -> None:
+        from inference.infer import EyeGazeInference
+
+        model = Path(__file__).parent / 'inference' / 'model' /'pretrained_weights' / 'social_eyes_uncertainty_v1' 
+        self._egi = EyeGazeInference(model / 'weights.pth', model / 'config.yaml', device)
 
     def predict(self, img, verbose = False):
         start = time.time()
@@ -43,7 +43,7 @@ class GazeInference():
             "pitch_upper": upper[0][1],
         }
         if verbose == 2:
-            print(verbose)
+            print(value_mapping)
         return (value_mapping['yaw'], value_mapping['pitch'])
     
     def a2t(self, image):
@@ -238,7 +238,7 @@ def main():
 
 
     eye_gaze = BetterEyeGaze(
-        live=False, correct_distorsion=True, rotate_image=True, vrs_file=vrs_file
+        live=False, correct_distorsion=True, rotate_image=True, vrs_file=vrs_file, init_inference=True
     )
 
     for time in eye_gaze.get_time_range():
