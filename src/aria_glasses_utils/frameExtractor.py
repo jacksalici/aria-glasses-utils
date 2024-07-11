@@ -2,11 +2,11 @@ from projectaria_tools.core import data_provider, image
 from projectaria_tools.core.stream_id import StreamId
 from projectaria_tools.core.sensor_data import TimeDomain, TimeQueryOptions
 
-from .utils import *
+from aria_glasses_utils.utils import *
 
 
-from .BetterEyeGaze import BetterEyeGaze
-from .BetterAriaProvider import *
+from aria_glasses_utils.BetterEyeGaze import BetterEyeGaze
+from aria_glasses_utils.BetterAriaProvider import *
 
 
 import cv2
@@ -36,7 +36,7 @@ def main():
 
     config = tomllib.load(open("config.toml", "rb"))
     
-    provider = BetterAriaProvider("config.toml")
+    provider = BetterAriaProvider(vrs=config["aria_recordings"]["vrs"])
 
     output_folder = config["aria_recordings"]["output"]
     gaze_output_folder = config["aria_recordings"]["gaze_output"]
@@ -48,7 +48,9 @@ def main():
     shutil.rmtree(gaze_output_folder, ignore_errors=True)
     os.mkdir(gaze_output_folder)
     
-    eye_gaze = BetterEyeGaze(False, correct_distorsion=True, vrs_file=config["aria_recordings"]["vrs"])
+    
+    
+    eye_gaze = BetterEyeGaze(*provider.get_calibration())
     
     imgs = []
     imgs_et = []

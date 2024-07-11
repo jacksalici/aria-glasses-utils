@@ -62,7 +62,7 @@ class BetterEyeGaze:
         self,
         custom_calibrations: Dict[Streams, CustomCalibration],
         device_calibrarion: calibration.DeviceCalibration,
-        correct_distorsion: bool = False,
+        correct_distorsion: bool = True,
         rotate_image: bool = True,
         init_inference=True,
     ) -> None:
