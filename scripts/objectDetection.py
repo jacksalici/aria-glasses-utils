@@ -20,8 +20,8 @@ import math
 import cv2
 from ultralytics import YOLO
 
-from aria_glasses_utils.utils import *
-from aria_glasses_utils.ariaStreaming import AriaStreaming
+from aria_glasses_utils.common import *
+from aria_glasses_utils.BetterAriaProvider import BetterAriaProvider, Streams
 
 
 def init_yolo():
@@ -57,27 +57,17 @@ def main():
         
     model, class_names = init_yolo()
 
-    aria_streaming = AriaStreaming(args)
-    aria_streaming.init_cv2_windows()
+    aria_streaming = BetterAriaProvider(True, cameras="RGB", verbose=False)
+    cv2.namedWindow("RGB", cv2.WINDOW_NORMAL)
     
     with ctrl_c_handler() as ctrl_c:
         while not (quit_keypress() or ctrl_c):
-            if aria_streaming.observer.img is not None:
-                img = cv2.cvtColor(aria_streaming.observer.img, cv2.COLOR_BGR2RGB)
-                
-                if args.correct_distorsion:
-                    img = distort_by_calibration(
-                        img, aria_streaming.dst_calib, aria_streaming.rgb_calib
-                    )
-                
-                results = model(img, stream=True, verbose=False)
+                img, success = aria_streaming.get_frame(Streams.RGB)
+                if success:
+                    results = model(img, stream=True, verbose=False)
 
-                img = draw_bounding_boxes(results, img, class_names)
-                cv2.imshow(aria_streaming.window, np.rot90(img, -1))
-
-                
-
-                aria_streaming.observer.img = None
+                    img = draw_bounding_boxes(results, img, class_names)
+                    cv2.imshow("RGB", img)
 
     aria_streaming.unsubscribe()
     
