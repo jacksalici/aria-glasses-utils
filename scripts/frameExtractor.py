@@ -25,7 +25,7 @@ def main():
 
     config = tomllib.load(open("config.toml", "rb"))
     
-    provider = BetterAriaProvider(vrs =  config["aria_recordings"]["vrs"])
+    provider = BetterAriaProvider(vrs=config["aria_recordings"]["vrs"])
 
     output_folder = config["aria_recordings"]["output"]
     gaze_output_folder = config["aria_recordings"]["gaze_output"]
@@ -36,6 +36,8 @@ def main():
     
     shutil.rmtree(gaze_output_folder, ignore_errors=True)
     os.mkdir(gaze_output_folder)
+    
+    
     
     eye_gaze = BetterEyeGaze(*provider.get_calibration())
     
