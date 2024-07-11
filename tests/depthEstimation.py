@@ -2,7 +2,7 @@ from projectaria_tools.core import data_provider, image, calibration
 from projectaria_tools.core.stream_id import StreamId
 from projectaria_tools.core.sensor_data import TimeDomain, TimeQueryOptions
 
-from utils import *
+from common import *
 
 
 from eyeGaze import EyeGaze

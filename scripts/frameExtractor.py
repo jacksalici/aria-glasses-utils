@@ -1,21 +1,11 @@
-from projectaria_tools.core import data_provider, image
-from projectaria_tools.core.stream_id import StreamId
-from projectaria_tools.core.sensor_data import TimeDomain, TimeQueryOptions
-
-from .utils import *
-
-
-from .BetterEyeGaze import BetterEyeGaze
-from .BetterAriaProvider import *
-
+from aria_glasses_utils.common import *
+from aria_glasses_utils.BetterEyeGaze import BetterEyeGaze
+from aria_glasses_utils.BetterAriaProvider import *
 
 import cv2
 import numpy as np
 
 import os
-
-
-
 
 def confidence(img1, img2):
 
@@ -26,7 +16,6 @@ def confidence(img1, img2):
     res = cv2.matchTemplate(process(img1), process(img2), cv2.TM_CCOEFF_NORMED)
     return res.max()
 
-
 def blurryness(img):
     return -cv2.Laplacian(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), cv2.CV_64F).var()
 
@@ -36,7 +25,7 @@ def main():
 
     config = tomllib.load(open("config.toml", "rb"))
     
-    provider = BetterAriaProvider("config.toml")
+    provider = BetterAriaProvider(vrs =  config["aria_recordings"]["vrs"])
 
     output_folder = config["aria_recordings"]["output"]
     gaze_output_folder = config["aria_recordings"]["gaze_output"]
@@ -48,24 +37,22 @@ def main():
     shutil.rmtree(gaze_output_folder, ignore_errors=True)
     os.mkdir(gaze_output_folder)
     
-    eye_gaze = BetterEyeGaze(False, correct_distorsion=True, vrs_file=config["aria_recordings"]["vrs"])
+    eye_gaze = BetterEyeGaze(*provider.get_calibration())
     
     imgs = []
     imgs_et = []
-    for time in provider.get_time_range():
+    for time in provider.get_time_range(1000000000):
         print(f"INFO: Checking frame at time {time}")
         frame = {}
         
         frame['rgb'], _ = provider.get_frame(Streams.RGB, time_ns=time)
         img_et, _ = provider.get_frame(Streams.ET, time, False, False)
         
-        frame['slam_l'], _ = provider.get_frame(Streams.SLAM_L, time)
-        frame['slam_r'], _ = provider.get_frame(Streams.SLAM_R, time)
+        #frame['slam_l'], _ = provider.get_frame(Streams.SLAM_L, time)
+        #frame['slam_r'], _ = provider.get_frame(Streams.SLAM_R, time)
         
-        
-
-
-        if (len(imgs) > 0 and confidence(frame["rgb"], imgs[-1]["rgb"]) < 0.7) or len(imgs) == 0:
+        ALL_IMAGES = True
+        if (len(imgs) > 0 and confidence(frame["rgb"], imgs[-1]["rgb"]) < 0.7) or len(imgs) == 0 or ALL_IMAGES:
             imgs.append(frame)
             imgs_et.append(img_et)
             
@@ -82,7 +69,7 @@ def main():
 
     import torch
     
-    extrinsic_cam_rgb = provider.calibration_device.get_transform_cpf_sensor(
+    rbg2cpf_camera_extrinsic = provider.calibration_device.get_transform_cpf_sensor(
         Streams.RGB.label()
     ).to_matrix()
 
@@ -102,10 +89,10 @@ def main():
                 gaze_center_in_cpf=gaze_center_in_cpf,
                 gaze_center_in_rgb_pixels=gaze_center_in_pixels,
                 gaze_center_in_rgb_frame=(
-                    np.linalg.inv(extrinsic_cam_rgb)
+                    np.linalg.inv(rbg2cpf_camera_extrinsic)
                     @ np.append(gaze_center_in_cpf, [1])
                 )[:3],
-                rbg_camera_extrinsic=extrinsic_cam_rgb,
+                rbg2cpf_camera_extrinsic=rbg2cpf_camera_extrinsic,
                 rbg_camera_intrinsic=eye_gaze.getCameraCalib().projection_params(),
             )
         print(f"INFO: File {index} saved.")

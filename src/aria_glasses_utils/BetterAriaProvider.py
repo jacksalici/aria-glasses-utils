@@ -27,7 +27,7 @@ from projectaria_tools.core.calibration import (
 
 
 #project classes
-from aria_glasses_utils.utils import *
+from aria_glasses_utils.common import *
 
 
 class Streams(Enum):
@@ -163,9 +163,9 @@ class BetterAriaProvider:
                 )[0].to_numpy_array()
                     
         else:
-            if stream.ariaCameraId() in provider.observer.imgs:
-                img = provider.observer.imgs[stream.ariaCameraId()]
-                del provider.observer.imgs[stream.ariaCameraId()]
+            if stream.ariaCameraId() in self.observer.imgs:
+                img = self.observer.imgs[stream.ariaCameraId()]
+                del self.observer.imgs[stream.ariaCameraId()]
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             else:
                 return None, False

@@ -13,7 +13,7 @@ from projectaria_tools.core.stream_id import StreamId
 from projectaria_tools.core.mps.utils import get_nearest_eye_gaze
 from projectaria_tools.core.sensor_data import TimeDomain, TimeQueryOptions
 
-from aria_glasses_utils.utils import *
+from aria_glasses_utils.common import *
 from aria_glasses_utils.BetterAriaProvider import BetterAriaProvider, Streams, CustomCalibration
 
 
@@ -62,7 +62,7 @@ class BetterEyeGaze:
         self,
         custom_calibrations: Dict[Streams, CustomCalibration],
         device_calibrarion: calibration.DeviceCalibration,
-        correct_distorsion: bool = False,
+        correct_distorsion: bool = True,
         rotate_image: bool = True,
         init_inference=True,
     ) -> None:
