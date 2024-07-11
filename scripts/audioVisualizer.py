@@ -6,7 +6,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tomllib
 
-import utils
 
 
 config = tomllib.load(open("config.toml", "rb"))

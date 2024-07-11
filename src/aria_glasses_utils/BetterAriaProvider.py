@@ -67,12 +67,12 @@ class CustomCalibration():
             self.original_calib = device_calib.get_camera_calib(stream.label())
             
             if fix_size:
-                img_w, img_h, img_f = 512, 512, 200
+                self.img_w, self.img_h, self.img_f = 512, 512, 150
             else:    
-                img_w, img_h, img_f = int(self.original_calib.get_image_size()[0]), int(self.original_calib.get_image_size()[1]), self.original_calib.get_focal_lengths()[0]
+                self.img_w, self.img_h, self.img_f = int(self.original_calib.get_image_size()[0]), int(self.original_calib.get_image_size()[1]), self.original_calib.get_focal_lengths()[0]
 
             self.pinhole_calib = calibration.get_linear_camera_calibration(
-                                        img_w, img_h, img_f,
+                                        self.img_w, self.img_h, self.img_f,
                                         "pinhole_"+stream.name,
                                         self.original_calib.get_transform_device_camera(),
                                         )
@@ -142,13 +142,8 @@ class BetterAriaProvider:
                 
         self.customCalibrations: typing.Dict[Streams, CustomCalibration] = {}
         for s in Streams:
-            self.customCalibrations[s] = CustomCalibration(s, self.calibration_device)  
-            
-    def init_cv2_windows(self, window):
-        cv2.namedWindow(window, cv2.WINDOW_NORMAL)
-        cv2.resizeWindow(window, 512, 512)
-        cv2.setWindowProperty(window, cv2.WND_PROP_TOPMOST, 1)
-        cv2.moveWindow(window, 50, 50)
+            #fix size of calibration only when live
+            self.customCalibrations[s] = CustomCalibration(s, self.calibration_device, fix_size=live)          
     
     def unsubscribe(self):
         print("Stop listening to image data")
@@ -156,7 +151,6 @@ class BetterAriaProvider:
         self.__streaming_manager.stop_streaming()
         self.__device_client.disconnect(self.__device)
         
-         
     def get_time_range(self, time_step = 1e9):
         assert not self.live, "How can you get the time range in a live streaming?"
         return range(self.t_first, self.t_last, int(time_step))
@@ -169,37 +163,72 @@ class BetterAriaProvider:
                 )[0].to_numpy_array()
                     
         else:
-            if stream.ariaCameraId() in aria_streaming.observer.imgs:
-                img = aria_streaming.observer.imgs[stream.ariaCameraId()]
-                del aria_streaming.observer.imgs[stream.ariaCameraId()]
+            if stream.ariaCameraId() in provider.observer.imgs:
+                img = provider.observer.imgs[stream.ariaCameraId()]
+                del provider.observer.imgs[stream.ariaCameraId()]
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             else:
                 return None, False
 
-        if undistorted:
-            if rotated:
+        if stream is not Streams.ET:
+            if undistorted:
+                if rotated:
+                    img = np.rot90(img, k=3).copy()
+                    img = calibration.distort_by_calibration(img, self.customCalibrations[stream].rotated_pinhole_calib, self.customCalibrations[stream].original_calib)
+                else:
+                    img = calibration.distort_by_calibration(img, self.customCalibrations[stream].pinhole_calib, self.customCalibrations[stream].original_calib)
+            elif rotated:
                 img = np.rot90(img, -1).copy()
-                img = calibration.distort_by_calibration(img, self.customCalibrations[stream].rotated_pinhole_calib, self.customCalibrations[stream].original_calib)
-            else:
-                img = calibration.distort_by_calibration(img, self.customCalibrations[stream].pinhole_calib, self.customCalibrations[stream].original_calib)
-        elif rotated:
-            img = np.rot90(img, -1).copy()
-            
+
         return img, True
+    
+    def get_calibration(self) -> tuple[typing.Dict[Streams, CustomCalibration], calibration.DeviceCalibration]:
+        return self.customCalibrations, self.calibration_device
+        
             
 
 if __name__ == "__main__":
+    config = tomllib.load(open("config.toml", "rb"))
+
+    
+    LIVE = True
+
     args = parse_args()
 
-    aria_streaming = BetterAriaProvider(live=True, cameras = "RGB")
-    aria_streaming.init_cv2_windows("RGB")
+    provider = BetterAriaProvider(live=LIVE, vrs=config["aria_recordings"]["vrs"])
     #aria_streaming.init_cv2_windows("ET")
 
-    with ctrl_c_handler() as ctrl_c:
-        while not (quit_keypress() or ctrl_c):
-            img, success = aria_streaming.get_frame(Streams.RGB)
-            if success:
-                cv2.imshow('RGB', img)
-            #cv2.imshow('ET', aria_streaming.get_frame(Streams.ET))
+    cv2.namedWindow("RGB", cv2.WINDOW_NORMAL)
+    cv2.namedWindow("ET", cv2.WINDOW_NORMAL)
+    
+    
+    if LIVE:
+        with ctrl_c_handler() as ctrl_c:
+            while not (quit_keypress() or ctrl_c):
+                img, success = provider.get_frame(Streams.RGB)
+                if success:
+                    cv2.imshow('RGB', img)
+                
+                img, success = provider.get_frame(Streams.ET)
+                if success:
+                    cv2.imshow('ET', img)
+        
+        provider.unsubscribe()
+
+    else:
+        for time in provider.get_time_range():
+            img, _ = provider.get_frame(Streams.RGB, time_ns=time)
+            img_et, _ = provider.get_frame(Streams.ET, time_ns=time)
+            cv2.imshow('RGB', img)
+            cv2.imshow('ET', img_et)
             
-    aria_streaming.unsubscribe()
+            
+            if quit_keypress():
+                break
+            
+        
+            
+
+
+
+            
