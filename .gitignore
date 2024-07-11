@@ -3,3 +3,4 @@ __pycache__
 yolov8n.pt
 *.pyc
 *.egg-info/
+config.toml

@@ -1,0 +1,10 @@
+[frame_extractor]
+frame_per_seconds = 0.5
+
+[depth_estimator]
+frame_per_seconds = 0.2
+
+[aria_recordings]
+vrs = "path/to.vrs"
+output = "Dataset"
+gaze_output = "GazeOutput"
