@@ -56,11 +56,11 @@ def main():
         print(f"INFO: Checking frame at time {time}")
         frame = {}
         
-        frame['rgb'] = provider.get_frame(Streams.RGB, time_ns=time)
-        img_et = provider.get_frame(Streams.ET, time, False, False)
+        frame['rgb'], _ = provider.get_frame(Streams.RGB, time_ns=time)
+        img_et, _ = provider.get_frame(Streams.ET, time, False, False)
         
-        frame['slam_l'] = provider.get_frame(Streams.SLAM_L, time)
-        frame['slam_r'] = provider.get_frame(Streams.SLAM_R, time)
+        frame['slam_l'], _ = provider.get_frame(Streams.SLAM_L, time)
+        frame['slam_r'], _ = provider.get_frame(Streams.SLAM_R, time)
         
         
 
