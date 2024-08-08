@@ -204,7 +204,7 @@ def main():
 
         yaw, pitch = eye_gaze.predict(img_et)
         gaze_center_in_cpf2, gaze_center_in_pixels2 = eye_gaze.get_gaze_center_raw(
-            yaw, pitch, 0.5
+            yaw, pitch, 10
         )
 
         cv2.circle(img, gaze_center_in_pixels2, 5, (255, 255, 0), 2)

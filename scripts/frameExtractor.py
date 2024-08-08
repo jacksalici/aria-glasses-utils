@@ -7,6 +7,10 @@ import numpy as np
 
 import os
 
+ALL_IMAGES = True
+SLAM = True
+TIME_DELTA = 1_000_000_000
+
 def confidence(img1, img2):
 
     def process(img):
@@ -26,16 +30,15 @@ def main():
     config = tomllib.load(open("config.toml", "rb"))
     
     provider = BetterAriaProvider(vrs=config["aria_recordings"]["vrs"])
+    
 
     output_folder = config["aria_recordings"]["output"]
     gaze_output_folder = config["aria_recordings"]["gaze_output"]
+    from pathlib import Path
+    Path( output_folder).mkdir( parents=True, exist_ok=True )
+    Path( gaze_output_folder).mkdir( parents=True, exist_ok=True )
+
     
-    import shutil
-    shutil.rmtree(output_folder, ignore_errors=True)
-    os.mkdir(output_folder)
-    
-    shutil.rmtree(gaze_output_folder, ignore_errors=True)
-    os.mkdir(gaze_output_folder)
     
     
     
@@ -43,17 +46,18 @@ def main():
     
     imgs = []
     imgs_et = []
-    for time in provider.get_time_range(1000000000):
+    for time in provider.get_time_range(TIME_DELTA):
         print(f"INFO: Checking frame at time {time}")
         frame = {}
         
         frame['rgb'], _ = provider.get_frame(Streams.RGB, time_ns=time)
         img_et, _ = provider.get_frame(Streams.ET, time, False, False)
         
-        #frame['slam_l'], _ = provider.get_frame(Streams.SLAM_L, time)
-        #frame['slam_r'], _ = provider.get_frame(Streams.SLAM_R, time)
+        if SLAM:
+            frame['slam_l'], _ = provider.get_frame(Streams.SLAM_L, time)
+            frame['slam_r'], _ = provider.get_frame(Streams.SLAM_R, time)
         
-        ALL_IMAGES = True
+        
         if (len(imgs) > 0 and confidence(frame["rgb"], imgs[-1]["rgb"]) < 0.7) or len(imgs) == 0 or ALL_IMAGES:
             imgs.append(frame)
             imgs_et.append(img_et)
