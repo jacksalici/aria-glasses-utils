@@ -166,11 +166,12 @@ class BetterAriaProvider:
             if stream.ariaCameraId() in self.observer.imgs:
                 img = self.observer.imgs[stream.ariaCameraId()]
                 del self.observer.imgs[stream.ariaCameraId()]
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             else:
                 return None, False
 
         if stream is not Streams.ET:
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    
             if undistorted:
                 if rotated:
                     img = np.rot90(img, k=3).copy()
