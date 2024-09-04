@@ -170,7 +170,7 @@ class BetterAriaProvider:
                 return None, False
 
         if stream is not Streams.ET:
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            #not needed img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     
             if undistorted:
                 if rotated:
