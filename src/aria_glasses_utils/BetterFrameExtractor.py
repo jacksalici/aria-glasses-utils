@@ -116,16 +116,19 @@ def main():
     output_folder = config["aria_recordings"]["output"]
     gaze_output_folder =  config["aria_recordings"]["gaze_output"]
     gaze_output = "N"
+    export_slam = "N"
     
     input_vrs_path = input(f"Input VRS path: [{input_vrs_path}]:") or input_vrs_path
     output_folder = input(f"Output saving path [{output_folder}]:") or output_folder
+    export_slam = input(f"Export also slam frame? [y/N]") or "N"
+    
     gaze_output = input(f"Gaze output? [y/N]") or "N"
     
     if gaze_output == 'y':
          gaze_output_folder = input(f"Gaze info output folder [{gaze_output_folder}]:") or gaze_output_folder
     
     
-    exportFrames(input_vrs_path, output_folder, gaze_output_folder, gaze_output == 'y', show_preview=True)
+    exportFrames(input_vrs_path, output_folder, gaze_output_folder, gaze_output == 'y', export_slam_camera_frames = export_slam == 'y', show_preview=True)
 
 if __name__ == "__main__":
     main()
