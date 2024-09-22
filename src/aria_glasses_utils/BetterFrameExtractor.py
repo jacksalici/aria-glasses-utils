@@ -115,8 +115,17 @@ def main():
     input_vrs_path = config["aria_recordings"]["vrs"]
     output_folder = config["aria_recordings"]["output"]
     gaze_output_folder =  config["aria_recordings"]["gaze_output"]
+    gaze_output = "N"
     
-    exportFrames(input_vrs_path, output_folder, gaze_output_folder, True, show_preview=True, range_limits_ns=(6966418399425, 6977418399425))
+    input_vrs_path = input(f"Input VRS path: [{input_vrs_path}]:") or input_vrs_path
+    output_folder = input(f"Output saving path [{output_folder}]:") or output_folder
+    gaze_output = input(f"Gaze output? [y/N]") or "N"
+    
+    if gaze_output == 'y':
+         gaze_output_folder = input(f"Gaze info output folder [{gaze_output_folder}]:") or gaze_output_folder
+    
+    
+    exportFrames(input_vrs_path, output_folder, gaze_output_folder, gaze_output == 'y', show_preview=True)
 
 if __name__ == "__main__":
     main()
