@@ -21,7 +21,7 @@ def blurryness(img):
     return -cv2.Laplacian(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), cv2.CV_64F).var()
 
 
-def exportFrames(input_vrs_path, imgs_output_dir, gaze_output_folder = None, export_gaze_info = False, export_time_step = 1_000_000_000, export_slam_camera_frames = True, min_confidence = 0.7, show_preview = False):
+def exportFrames(input_vrs_path, imgs_output_dir, gaze_output_folder = None, export_gaze_info = False, export_time_step = 1_000_000_000, export_slam_camera_frames = True, min_confidence = 0.7, show_preview = False, range_limits_ns = None):
     provider = BetterAriaProvider(vrs=input_vrs_path)
     Path(imgs_output_dir).mkdir( parents=True, exist_ok=True )
     imgs = []
@@ -37,8 +37,12 @@ def exportFrames(input_vrs_path, imgs_output_dir, gaze_output_folder = None, exp
         image = np.zeros((400, 400, 3), dtype=np.uint8)
         cv2.imshow('PREVIEW', image)
 
-    
-    for time in provider.get_time_range(export_time_step):
+    if range_limits_ns:
+        time_range = range(range_limits_ns[0], range_limits_ns[1], export_time_step)
+    else:
+        time_range = provider.get_time_range(export_time_step)
+        
+    for time in time_range:
         print(f"INFO: Checking frame at time {time}")
         frame = {}
         
@@ -112,7 +116,7 @@ def main():
     output_folder = config["aria_recordings"]["output"]
     gaze_output_folder =  config["aria_recordings"]["gaze_output"]
     
-    exportFrames(input_vrs_path, output_folder, gaze_output_folder, True, show_preview=True)
+    exportFrames(input_vrs_path, output_folder, gaze_output_folder, True, show_preview=True, range_limits_ns=(6966418399425, 6977418399425))
 
 if __name__ == "__main__":
     main()
