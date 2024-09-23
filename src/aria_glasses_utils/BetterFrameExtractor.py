@@ -21,7 +21,7 @@ def blurryness(img):
     return -cv2.Laplacian(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), cv2.CV_64F).var()
 
 
-def exportFrames(input_vrs_path, imgs_output_dir, gaze_output_folder = None, export_gaze_info = False, export_time_step = 1_000_000_000, export_slam_camera_frames = True, min_confidence = 0.7, show_preview = False, range_limits_ns = None):
+def exportFrames(input_vrs_path, imgs_output_dir, gaze_output_folder = None, export_gaze_info = False, export_time_step = 1_000_000_000, export_slam_camera_frames = True, min_confidence = 0.7, show_preview = False, range_limits_ns = None, filename_prefix="", filename_w_timestamp = True):
     provider = BetterAriaProvider(vrs=input_vrs_path)
     Path(imgs_output_dir).mkdir( parents=True, exist_ok=True )
     imgs = []
@@ -45,7 +45,7 @@ def exportFrames(input_vrs_path, imgs_output_dir, gaze_output_folder = None, exp
     for time in time_range:
         print(f"INFO: Checking frame at time {time}")
         frame = {}
-        
+        frame['timestamp'] = str(time)
         frame['rgb'], _ = provider.get_frame(Streams.RGB, time_ns=time)
         frame['rgb'] = cv2.cvtColor(frame["rgb"], cv2.COLOR_BGR2RGB)
         
@@ -77,8 +77,14 @@ def exportFrames(input_vrs_path, imgs_output_dir, gaze_output_folder = None, exp
 
     for index, frame in enumerate(imgs):
         
-        for name,img in frame.items():
-            cv2.imwrite(os.path.join(imgs_output_dir, f"img{index}{name}.jpg"), img)
+        file_name = filename_prefix + frame['timestamp'] if filename_w_timestamp else str(index)
+        
+        cv2.imwrite(os.path.join(imgs_output_dir, f"{file_name}.jpg"), frame['rgb'])
+
+        if export_slam_camera_frames:
+            cv2.imwrite(os.path.join(imgs_output_dir, f"{file_name}_slam_l.jpg"), frame['slam_l'])
+            cv2.imwrite(os.path.join(imgs_output_dir, f"{file_name}_slam_r.jpg"), frame['slam-r'])
+            
         
         if export_gaze_info:
             yaw, pitch = eye_gaze.predict(torch.tensor(imgs_et[index], device="cpu"))
@@ -94,7 +100,7 @@ def exportFrames(input_vrs_path, imgs_output_dir, gaze_output_folder = None, exp
                     show_preview = False
                 
             np.savez(
-                    os.path.join(gaze_output_folder, f"img{index}.npz"),
+                    os.path.join(gaze_output_folder, f"{file_name}.npz"),
                     gaze_yaw_pitch=np.array([yaw, pitch]),
                     gaze_center_in_cpf=gaze_center_in_cpf,
                     gaze_center_in_rgb_pixels=gaze_center_in_pixels,
@@ -105,7 +111,8 @@ def exportFrames(input_vrs_path, imgs_output_dir, gaze_output_folder = None, exp
                     rbg2cpf_camera_extrinsic=rbg2cpf_camera_extrinsic,
                     rbg_camera_intrinsic=eye_gaze.getCameraCalib().projection_params(),
                 )
-        print(f"INFO: File {index} saved.")
+            
+            print(f"INFO: File {index} saved.")
 
 
 def main():
