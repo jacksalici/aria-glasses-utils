@@ -21,7 +21,7 @@ def blurryness(img):
     return -cv2.Laplacian(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), cv2.CV_64F).var()
 
 
-def exportFrames(input_vrs_path, imgs_output_dir, gaze_output_folder = None, export_gaze_info = False, export_time_step = 1_000_000_000, export_slam_camera_frames = True, min_confidence = 0.7, show_preview = False, range_limits_ns = None, filename_prefix="", filename_w_timestamp = True):
+def exportFrames(input_vrs_path, imgs_output_dir, gaze_output_folder = None, export_gaze_info = False, export_time_step = 1_000_000_000, export_slam_camera_frames = False, min_confidence = 0.7, show_preview = False, range_limits_ns = None, filename_prefix="", filename_w_timestamp = True):
     provider = BetterAriaProvider(vrs=input_vrs_path)
     Path(imgs_output_dir).mkdir( parents=True, exist_ok=True )
     imgs = []
