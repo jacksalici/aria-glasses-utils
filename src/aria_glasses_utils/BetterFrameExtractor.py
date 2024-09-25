@@ -56,6 +56,9 @@ def exportFrames(input_vrs_path, imgs_output_dir, gaze_output_folder = None, exp
             frame['slam_l'], _ = provider.get_frame(Streams.SLAM_L, time)
             frame['slam_r'], _ = provider.get_frame(Streams.SLAM_R, time)
         
+        if show_preview:
+            image = np.zeros((400, 400, 3), dtype=np.uint8)
+            cv2.imshow('PREVIEW', image)
         
         if (len(imgs) > 0 and confidence(frame["rgb"], imgs[-1]["rgb"]) < min_confidence) or len(imgs) == 0:
             imgs.append(frame)
@@ -67,9 +70,13 @@ def exportFrames(input_vrs_path, imgs_output_dir, gaze_output_folder = None, exp
         else:
             if blurryness(frame["rgb"]) < blurryness(imgs[-1]["rgb"]):
                 imgs[-1] = frame
+                if export_gaze_info:
+                    imgs_et[-1] = img_et
                 print(
                     f"INFO: Frame substituted to the last in the list for better sharpness."
                 )
+            else:
+                print("WARNING: Frame not addded")
 
     rbg2cpf_camera_extrinsic = provider.calibration_device.get_transform_cpf_sensor(
         Streams.RGB.label()

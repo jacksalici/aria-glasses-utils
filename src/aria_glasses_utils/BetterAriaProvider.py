@@ -154,12 +154,22 @@ class BetterAriaProvider:
     def get_time_range(self, time_step = 1e9):
         assert not self.live, "How can you get the time range in a live streaming?"
         return range(self.t_first, self.t_last, int(time_step))
-    
-    def get_frame(self, stream: Streams, time_ns = None, rotated = True, undistorted = True):
+   
+
+    def get_frame(self, stream: Streams, time_ns = None, rotated = True, undistorted = True, sync=True):
         if not self.live:
             assert time_ns, "Time must be specified."
+            domain = TimeDomain.DEVICE_TIME
+            mode = self.__provider.get_metadata().time_sync_mode.name
+            if mode == 'TicSyncServer' or sync == False:
+                domain = TimeDomain.DEVICE_TIME
+            elif mode == 'TicSyncClient':
+                domain = TimeDomain.TIC_SYNC
+            else:
+                raise NotImplementedError(f'Unsupported time-sync mode {mode}')
+        
             img = self.__provider.get_image_data_by_time_ns(
-                    stream.value, time_ns, TimeDomain.DEVICE_TIME, TimeQueryOptions.CLOSEST
+                    stream.value, time_ns, domain, TimeQueryOptions.CLOSEST
                 )[0].to_numpy_array()
                     
         else:
