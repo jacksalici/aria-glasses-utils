@@ -8,7 +8,7 @@ from pathlib import Path
 import torch
 import os
 
-def confidence(img1, img2):
+def similarity(img1, img2):
 
     def process(img):
         img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -17,11 +17,11 @@ def confidence(img1, img2):
     res = cv2.matchTemplate(process(img1), process(img2), cv2.TM_CCOEFF_NORMED)
     return res.max()
 
-def blurryness(img):
+def blurriness(img):
     return -cv2.Laplacian(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), cv2.CV_64F).var()
 
 
-def exportFrames(input_vrs_path, imgs_output_dir, gaze_output_folder = None, export_gaze_info = False, export_time_step = 1_000_000_000, export_slam_camera_frames = False, min_confidence = 0.7, show_preview = False, range_limits_ns = None, filename_prefix="", filename_w_timestamp = True):
+def exportFrames(input_vrs_path, imgs_output_dir, gaze_output_folder = None, export_gaze_info = False, export_time_step = 1_000_000_000, export_slam_camera_frames = False, max_similarity = 0.7, show_preview = False, range_limits_ns = None, filename_prefix="", filename_w_timestamp = True):
     provider = BetterAriaProvider(vrs=input_vrs_path)
     Path(imgs_output_dir).mkdir( parents=True, exist_ok=True )
     imgs = []
@@ -60,7 +60,7 @@ def exportFrames(input_vrs_path, imgs_output_dir, gaze_output_folder = None, exp
             image = np.zeros((400, 400, 3), dtype=np.uint8)
             cv2.imshow('PREVIEW', image)
         
-        if (len(imgs) > 0 and confidence(frame["rgb"], imgs[-1]["rgb"]) < min_confidence) or len(imgs) == 0:
+        if (len(imgs) > 0 and similarity(frame["rgb"], imgs[-1]["rgb"]) < max_similarity) or len(imgs) == 0:
             imgs.append(frame)
             
             if export_gaze_info:
@@ -68,7 +68,7 @@ def exportFrames(input_vrs_path, imgs_output_dir, gaze_output_folder = None, exp
             
             print(f"INFO: Frame added to the list.")
         else:
-            if blurryness(frame["rgb"]) < blurryness(imgs[-1]["rgb"]):
+            if blurriness(frame["rgb"]) < blurriness(imgs[-1]["rgb"]):
                 imgs[-1] = frame
                 if export_gaze_info:
                     imgs_et[-1] = img_et
